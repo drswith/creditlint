@@ -1,6 +1,6 @@
 ## 1. Project Bootstrap
 
-- [ ] 1.1 Create Cargo-managed Rust package metadata and `creditlint` CLI bin entry.
+- [x] 1.1 Create Cargo-managed Rust package metadata and `creditlint` CLI bin entry.
 - [ ] 1.2 Add `rust-toolchain.toml`, Rust formatting/linting/test commands, `just` recipes, and `cargo-nextest` workflow documentation.
 - [ ] 1.3 Create initial Rust source layout for CLI commands, policy engine, config loading, and reporters.
 - [x] 1.4 Add README with problem statement, install placeholder, and first command examples.
