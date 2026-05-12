@@ -27,7 +27,7 @@
 
 ## 4. Git Integration
 
-- [ ] 4.1 Implement deterministic Git commit-message collection for `check --range`.
+- [x] 4.1 Implement deterministic Git commit-message collection for `check --range`.
 - [ ] 4.2 Include commit SHAs in violations from Git range checks.
 - [ ] 4.3 Implement `audit --all` for all reachable commit messages.
 - [ ] 4.4 Add temporary-repository integration tests for clean ranges, violating ranges, invalid ranges, and audit mode.

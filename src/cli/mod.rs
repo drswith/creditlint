@@ -6,6 +6,7 @@ use clap::{ArgGroup, Args, Parser, Subcommand};
 use thiserror::Error;
 
 use crate::config::{ConfigError, load_policy_from_current_dir};
+use crate::git::{GitError, collect_range_messages};
 use crate::policy::{AnalysisError, Source, SourceKind};
 use crate::reporter::{OutputFormat, render_violations};
 
@@ -26,13 +27,15 @@ enum Commands {
 #[command(group(
     ArgGroup::new("input")
         .required(true)
-        .args(["message_file", "stdin"])
+        .args(["message_file", "stdin", "range"])
 ))]
 struct CheckArgs {
     #[arg(long)]
     message_file: Option<PathBuf>,
     #[arg(long)]
     stdin: bool,
+    #[arg(long)]
+    range: Option<String>,
     #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
     format: OutputFormat,
 }
@@ -48,8 +51,8 @@ pub fn run() -> Result<(), CliError> {
 fn run_check(args: CheckArgs) -> Result<(), CliError> {
     let policy = load_policy_from_current_dir().map_err(CliError::Config)?;
     let format = args.format;
-    let (content, source) = match (args.message_file, args.stdin) {
-        (Some(path), false) => {
+    let violations = match (args.message_file, args.stdin, args.range) {
+        (Some(path), false, None) => {
             let content = fs::read_to_string(&path).map_err(|source| CliError::ReadMessage {
                 path: path.clone(),
                 source,
@@ -59,9 +62,11 @@ fn run_check(args: CheckArgs) -> Result<(), CliError> {
                 path: Some(path),
                 commit_sha: None,
             };
-            (content, source)
+            policy
+                .analyze(source, &content)
+                .map_err(CliError::AnalyzeMessage)?
         }
-        (None, true) => {
+        (None, true, None) => {
             let mut content = String::new();
             io::stdin()
                 .read_to_string(&mut content)
@@ -71,14 +76,28 @@ fn run_check(args: CheckArgs) -> Result<(), CliError> {
                 path: None,
                 commit_sha: None,
             };
-            (content, source)
+            policy
+                .analyze(source, &content)
+                .map_err(CliError::AnalyzeMessage)?
         }
+        (None, false, Some(range)) => collect_range_messages(&range)
+            .map_err(CliError::Git)?
+            .into_iter()
+            .map(|commit| {
+                let source = Source {
+                    kind: SourceKind::Commit,
+                    path: None,
+                    commit_sha: Some(commit.sha),
+                };
+                policy.analyze(source, &commit.message)
+            })
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(CliError::AnalyzeMessage)?
+            .into_iter()
+            .flatten()
+            .collect(),
         _ => return Err(CliError::InvalidInputSelection),
     };
-
-    let violations = policy
-        .analyze(source, &content)
-        .map_err(CliError::AnalyzeMessage)?;
 
     if violations.is_empty() {
         if format == OutputFormat::Json {
@@ -111,6 +130,8 @@ pub enum CliError {
     ReadStdin(#[source] std::io::Error),
     #[error("failed to analyze message")]
     AnalyzeMessage(#[source] AnalysisError),
+    #[error("failed to collect commit messages from git")]
+    Git(#[source] GitError),
     #[error("failed to render output")]
     RenderReport(#[source] serde_json::Error),
 }
@@ -124,6 +145,7 @@ impl CliError {
             | CliError::ReadMessage { .. }
             | CliError::ReadStdin(_)
             | CliError::AnalyzeMessage(_)
+            | CliError::Git(_)
             | CliError::RenderReport(_) => 2,
         }
     }
