@@ -141,6 +141,39 @@ Once native release artifacts exist, the build step can be replaced with a
 binary download or package install. The fetch-depth requirement remains the
 same for range checks.
 
+## Local Hooks
+
+Initialize a repository policy file:
+
+```sh
+creditlint init
+```
+
+Install the managed `commit-msg` hook:
+
+```sh
+creditlint install-hook
+```
+
+The installed hook runs:
+
+```sh
+creditlint check --message-file "$1"
+```
+
+`creditlint install-hook` only replaces hooks that already carry the stable
+`creditlint managed hook` marker. If a repository already has an unmanaged
+`commit-msg` hook, `creditlint` refuses to overwrite it.
+
+For manual integration into an existing hook, add this line to the hook script:
+
+```sh
+creditlint check --message-file "$1"
+```
+
+If your team uses the Python `pre-commit` framework, run the same command from a
+local hook entry and pass the commit message file path through the hook config.
+
 ## Privacy
 
 The planned CLI is local-first. By default, `creditlint` should not upload commit

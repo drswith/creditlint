@@ -123,3 +123,26 @@ When documenting or updating CI examples:
 
 Shallow fetches can make `check --range` fail because the base commit is not
 available locally.
+
+## Local Hook Notes
+
+Prefer the managed hook path for local testing:
+
+```sh
+creditlint init
+creditlint install-hook
+```
+
+The managed installer is intentionally conservative:
+
+- It writes a `commit-msg` hook that runs `creditlint check --message-file`.
+- It replaces only hooks that already contain the stable `creditlint managed
+  hook` marker and version field.
+- It refuses to overwrite unmanaged hooks.
+
+When a repository already owns its `commit-msg` hook, document manual
+integration by adding this command to the existing hook:
+
+```sh
+creditlint check --message-file "$1"
+```
