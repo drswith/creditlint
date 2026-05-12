@@ -1,4 +1,5 @@
 use std::fs;
+use std::process::{Command as ProcessCommand, Stdio};
 
 use assert_cmd::Command;
 use serde_json::Value;
@@ -8,6 +9,64 @@ fn make_repo() -> tempfile::TempDir {
     let temp_dir = tempdir().expect("tempdir");
     fs::create_dir(temp_dir.path().join(".git")).expect("git dir");
     temp_dir
+}
+
+fn init_git_repo() -> tempfile::TempDir {
+    let temp_dir = tempdir().expect("tempdir");
+    run_git(temp_dir.path(), ["init"]);
+    run_git(temp_dir.path(), ["config", "user.name", "Creditlint Test"]);
+    run_git(
+        temp_dir.path(),
+        ["config", "user.email", "creditlint@example.com"],
+    );
+    temp_dir
+}
+
+fn run_git<const N: usize>(repo: &std::path::Path, args: [&str; N]) {
+    let status = ProcessCommand::new("git")
+        .current_dir(repo)
+        .args(args)
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("run git");
+
+    assert!(status.success(), "git command should succeed");
+}
+
+fn write_and_commit(
+    repo: &std::path::Path,
+    filename: &str,
+    contents: &str,
+    subject: &str,
+    body: Option<&str>,
+) {
+    fs::write(repo.join(filename), contents).expect("write file");
+    run_git(repo, ["add", filename]);
+
+    let mut command = ProcessCommand::new("git");
+    command.current_dir(repo).args(["commit", "-m", subject]);
+    if let Some(body) = body {
+        command.args(["-m", body]);
+    }
+    command.stdout(Stdio::null()).stderr(Stdio::null());
+
+    let status = command.status().expect("git commit");
+    assert!(status.success(), "git commit should succeed");
+}
+
+fn head_sha(repo: &std::path::Path) -> String {
+    let output = ProcessCommand::new("git")
+        .current_dir(repo)
+        .args(["rev-parse", "HEAD"])
+        .output()
+        .expect("rev-parse");
+
+    assert!(output.status.success(), "rev-parse should succeed");
+    String::from_utf8(output.stdout)
+        .expect("sha utf8")
+        .trim()
+        .to_string()
 }
 
 #[test]
@@ -98,5 +157,95 @@ fn invalid_config_returns_exit_code_two() {
     assert!(
         String::from_utf8_lossy(&output.stderr).contains("failed to load policy"),
         "stderr should explain the config failure"
+    );
+}
+
+#[test]
+fn check_range_clean_commits_returns_zero() {
+    let repo = init_git_repo();
+    write_and_commit(repo.path(), "first.txt", "first\n", "first commit", None);
+    write_and_commit(repo.path(), "second.txt", "second\n", "second commit", None);
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["check", "--range", "HEAD~1..HEAD"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(0));
+}
+
+#[test]
+fn check_range_violating_commit_returns_one_and_includes_sha() {
+    let repo = init_git_repo();
+    write_and_commit(repo.path(), "first.txt", "first\n", "first commit", None);
+    write_and_commit(
+        repo.path(),
+        "second.txt",
+        "second\n",
+        "second commit",
+        Some("Co-authored-by: Codex <codex@example.com>"),
+    );
+    let violating_sha = head_sha(repo.path());
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["check", "--range", "HEAD~1..HEAD"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("forbidden-ai-coauthor"));
+    assert!(stdout.contains(&violating_sha));
+}
+
+#[test]
+fn check_range_invalid_range_returns_two() {
+    let repo = init_git_repo();
+    write_and_commit(repo.path(), "first.txt", "first\n", "first commit", None);
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["check", "--range", "missing..HEAD"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr)
+            .contains("failed to collect commit messages from git"),
+        "stderr should explain the git range failure"
+    );
+}
+
+#[test]
+fn audit_all_reports_violations() {
+    let repo = init_git_repo();
+    write_and_commit(repo.path(), "first.txt", "first\n", "first commit", None);
+    write_and_commit(
+        repo.path(),
+        "second.txt",
+        "second\n",
+        "second commit",
+        Some("Made with Cursor"),
+    );
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["audit", "--all", "--format", "json"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(1));
+    let json: Value = serde_json::from_slice(&output.stdout).expect("json output");
+    assert_eq!(json["ok"], Value::Bool(false));
+    assert_eq!(
+        json["violations"][0]["rule_id"],
+        "forbidden-made-with-marker"
     );
 }
