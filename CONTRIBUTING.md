@@ -215,3 +215,14 @@ Unsupported subset:
 - regex-matched trailer field names
 - non-anchored free-form prose matching
 - normalization or multi-pass logic
+
+## Versioning And Changelog Notes
+
+Until the first public release, keep release notes in `CHANGELOG.md` under
+`Unreleased`.
+
+When cutting a release:
+
+- move shipped items into a dated version heading
+- bump `Cargo.toml` version in the same change
+- keep SemVer discipline for CLI behavior, config schema, and output contracts

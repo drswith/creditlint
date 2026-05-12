@@ -361,6 +361,17 @@ The package metadata is prepared for native Rust distribution through:
 The published metadata points back to this repository and the future `docs.rs`
 documentation page for the crate.
 
+## Versioning
+
+The project intends to follow SemVer after the first public release.
+
+Before that release:
+
+- keep ongoing work in `CHANGELOG.md` under `Unreleased`
+- bump `Cargo.toml` and cut a dated changelog heading in the same release change
+- treat CLI flags, config schema, exit codes, and JSON output as versioned user
+  contracts
+
 ## License
 
 MIT
