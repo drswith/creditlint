@@ -16,6 +16,8 @@ semantic versioning after the first release.
 - Added CI workflow scaffolding and release metadata for native packaging.
 - Added release-binary smoke coverage and a delivery workflow for native
   release artifacts.
+- Added crates.io publishing support to the release workflow via
+  `CARGO_REGISTRY_TOKEN`.
 
 ## Versioning Guidance
 

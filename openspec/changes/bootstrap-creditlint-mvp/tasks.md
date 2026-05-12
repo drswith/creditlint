@@ -71,3 +71,5 @@
 - [x] 9.2 Add a delivery workflow that builds native release artifacts for supported platforms and uploads them as workflow artifacts or release assets.
 - [x] 9.3 Update project docs and status text from bootstrap/planning language to delivery-ready language, including the release-artifact path.
 - [x] 9.4 Run Rust and OpenSpec validation again after delivery-stage changes and update task status.
+- [x] 9.5 Add crates.io publishing to the release workflow, including the required GitHub permissions and `CARGO_REGISTRY_TOKEN` secret path.
+- [x] 9.6 Run Rust and OpenSpec validation again after crates.io delivery changes and update task status.
