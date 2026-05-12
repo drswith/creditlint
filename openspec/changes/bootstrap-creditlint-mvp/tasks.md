@@ -8,7 +8,7 @@
 
 ## 2. Policy Engine
 
-- [ ] 2.1 Define policy, rule, source, and violation Rust types.
+- [x] 2.1 Define policy, rule, source, and violation Rust types.
 - [ ] 2.2 Implement built-in default policy for AI/tool authorship and credit markers.
 - [ ] 2.3 Implement `.creditlint.yml` loading with schema validation and fail-closed invalid-config behavior.
 - [ ] 2.4 Implement raw message analysis for trailer-like key-value lines and free-form marker lines.
