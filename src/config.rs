@@ -8,11 +8,37 @@ use thiserror::Error;
 
 use crate::policy::{FieldMatcher, Policy, Rule, RuleKind, ValueMatcher};
 
-const CONFIG_FILE_NAME: &str = ".creditlint.yml";
+pub const CONFIG_FILE_NAME: &str = ".creditlint.yml";
+const DEFAULT_CONFIG_CONTENTS: &str = r#"version: 1
+rules:
+  forbidden_trailers:
+    - key: Co-authored-by
+      value_pattern: "(?i)(codex|claude|cursor|copilot|openai|anthropic|gemini|ai)"
+    - key_pattern: "(?i)^made[- ]with\\b.*$"
+    - key_pattern: "(?i)^made[- ]on\\b.*$"
+    - key_pattern: "(?i)^generated[- ]with\\b.*$"
+  allowed_provenance_trailers:
+    - AI-Assisted
+    - Tool-Used
+    - Generated-by
+"#;
 
 pub fn load_policy_from_current_dir() -> Result<Policy, ConfigError> {
     let current_dir = env::current_dir().map_err(ConfigError::CurrentDir)?;
     load_policy(&current_dir)
+}
+
+pub fn default_config_contents() -> &'static str {
+    DEFAULT_CONFIG_CONTENTS
+}
+
+pub fn init_config_path_from_current_dir() -> Result<PathBuf, ConfigError> {
+    let current_dir = env::current_dir().map_err(ConfigError::CurrentDir)?;
+    init_config_path(&current_dir)
+}
+
+pub fn init_config_path(start_dir: &Path) -> Result<PathBuf, ConfigError> {
+    Ok(find_repo_root(start_dir)?.join(CONFIG_FILE_NAME))
 }
 
 pub fn load_policy(start_dir: &Path) -> Result<Policy, ConfigError> {

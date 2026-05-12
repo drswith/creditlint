@@ -5,7 +5,10 @@ use std::path::PathBuf;
 use clap::{ArgGroup, Args, Parser, Subcommand};
 use thiserror::Error;
 
-use crate::config::{ConfigError, load_policy_from_current_dir};
+use crate::config::{
+    ConfigError, default_config_contents, init_config_path_from_current_dir,
+    load_policy_from_current_dir,
+};
 use crate::git::{GitError, collect_all_messages, collect_range_messages};
 use crate::policy::{AnalysisError, Source, SourceKind};
 use crate::reporter::{OutputFormat, render_violations};
@@ -22,6 +25,7 @@ pub struct Cli {
 enum Commands {
     Check(CheckArgs),
     Audit(AuditArgs),
+    Init,
 }
 
 #[derive(Debug, Args)]
@@ -55,7 +59,24 @@ pub fn run() -> Result<(), CliError> {
     match cli.command {
         Commands::Check(args) => run_check(args),
         Commands::Audit(args) => run_audit(args),
+        Commands::Init => run_init(),
     }
+}
+
+fn run_init() -> Result<(), CliError> {
+    let path = init_config_path_from_current_dir().map_err(CliError::Config)?;
+
+    if path.exists() {
+        return Err(CliError::ConfigAlreadyExists { path });
+    }
+
+    fs::write(&path, default_config_contents()).map_err(|source| CliError::WriteConfig {
+        path: path.clone(),
+        source,
+    })?;
+
+    println!("created {}", path.display());
+    Ok(())
 }
 
 fn run_check(args: CheckArgs) -> Result<(), CliError> {
@@ -181,6 +202,14 @@ pub enum CliError {
     Git(#[source] GitError),
     #[error("failed to render output")]
     RenderReport(#[source] serde_json::Error),
+    #[error("config file already exists at {path}")]
+    ConfigAlreadyExists { path: PathBuf },
+    #[error("failed to write config file at {path}")]
+    WriteConfig {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 impl CliError {
@@ -193,7 +222,9 @@ impl CliError {
             | CliError::ReadStdin(_)
             | CliError::AnalyzeMessage(_)
             | CliError::Git(_)
-            | CliError::RenderReport(_) => 2,
+            | CliError::RenderReport(_)
+            | CliError::ConfigAlreadyExists { .. }
+            | CliError::WriteConfig { .. } => 2,
         }
     }
 }

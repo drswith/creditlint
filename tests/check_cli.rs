@@ -91,6 +91,54 @@ fn check_message_file_reports_violation_with_exit_code_one() {
 }
 
 #[test]
+fn init_writes_default_config_file() {
+    let repo = make_repo();
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("init")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(0));
+
+    let config_path = repo.path().join(".creditlint.yml");
+    let config = fs::read_to_string(&config_path).expect("config file");
+    assert!(config.contains("version: 1"));
+    assert!(config.contains("key: Co-authored-by"));
+    assert!(config.contains("allowed_provenance_trailers"));
+}
+
+#[test]
+fn init_refuses_to_overwrite_existing_config() {
+    let repo = make_repo();
+    let config_path = repo.path().join(".creditlint.yml");
+    fs::write(
+        &config_path,
+        "version: 1\nrules:\n  forbidden_trailers: []\n",
+    )
+    .expect("config");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("init")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("config file already exists"),
+        "stderr should explain the existing config"
+    );
+    assert_eq!(
+        fs::read_to_string(&config_path).expect("config file"),
+        "version: 1\nrules:\n  forbidden_trailers: []\n"
+    );
+}
+
+#[test]
 fn check_stdin_supports_json_output() {
     let repo = make_repo();
 
