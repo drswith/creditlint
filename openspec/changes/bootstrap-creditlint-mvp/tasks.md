@@ -1,0 +1,58 @@
+## 1. Project Bootstrap
+
+- [ ] 1.1 Create pnpm-managed TypeScript package metadata, lockfile, and CLI bin entry.
+- [ ] 1.2 Add TypeScript, test runner, formatter/linter, and build scripts.
+- [ ] 1.3 Create initial source layout for CLI commands, policy engine, config loading, and reporters.
+- [x] 1.4 Add README with problem statement, install placeholder, and first command examples.
+- [x] 1.5 Add AGENTS, CONTRIBUTING, and CHANGELOG project entry documents.
+
+## 2. Policy Engine
+
+- [ ] 2.1 Define policy, rule, source, and violation TypeScript types.
+- [ ] 2.2 Implement built-in default policy for AI/tool authorship and credit markers.
+- [ ] 2.3 Implement `.creditlint.yml` loading with schema validation and fail-closed invalid-config behavior.
+- [ ] 2.4 Implement raw message analysis for trailer-like key-value lines and free-form marker lines.
+- [ ] 2.5 Add unit tests for default rejects, default allows, custom rules, invalid config, and structured violations.
+- [ ] 2.6 Implement and test forbidden-before-allowed rule precedence.
+- [ ] 2.7 Implement and test conservative free-form marker matching that avoids normal prose.
+- [ ] 2.8 Document explicit threat model, bypass assumptions, and Unicode homoglyph out-of-scope behavior.
+
+## 3. CLI Check Commands
+
+- [ ] 3.1 Implement `creditlint check --message-file`.
+- [ ] 3.2 Implement `creditlint check --stdin`.
+- [ ] 3.3 Implement human-readable and JSON reporters.
+- [ ] 3.4 Implement stable exit codes `0`, `1`, and `2`.
+- [ ] 3.5 Add CLI tests for file input, stdin input, output formats, invalid config, and exit codes.
+
+## 4. Git Integration
+
+- [ ] 4.1 Implement deterministic Git commit-message collection for `check --range`.
+- [ ] 4.2 Include commit SHAs in violations from Git range checks.
+- [ ] 4.3 Implement `audit --all` for all reachable commit messages.
+- [ ] 4.4 Add temporary-repository integration tests for clean ranges, violating ranges, invalid ranges, and audit mode.
+- [ ] 4.5 Add an audit performance budget and verify commit metadata is processed incrementally.
+
+## 5. Workflow Integrations
+
+- [ ] 5.1 Implement `creditlint init` that writes `.creditlint.yml` without overwriting existing config.
+- [ ] 5.2 Implement `creditlint install-hook` with stable managed-hook markers and safe handling for existing unmanaged `commit-msg` hooks.
+- [ ] 5.3 Add GitHub Actions documentation using pnpm and full-history checkout for range checks.
+- [ ] 5.4 Add local Git hook and pre-commit documentation.
+- [ ] 5.5 Document pull request title/body validation by writing PR text to a file and using `check --message-file`.
+- [ ] 5.6 Document the default no-telemetry/no-network privacy boundary.
+
+## 6. GitHub Squash Merge Coverage
+
+- [ ] 6.1 Implement `creditlint github ruleset-pattern` for policies that can be represented as one safe regex.
+- [ ] 6.2 Make unsupported ruleset conversion fail closed with a clear explanation.
+- [ ] 6.3 Document GitHub ruleset metadata restriction setup for final squash commit messages.
+- [ ] 6.4 Document merge-bot validation with `creditlint check --message-file final-merge-message.txt`.
+- [ ] 6.5 Document which policy subsets are representable as one GitHub ruleset regex and which require merge-bot validation.
+
+## 7. Release Readiness
+
+- [ ] 7.1 Add CI workflow that installs with pnpm, runs tests, and builds the CLI.
+- [ ] 7.2 Add package publishing metadata for the `creditlint` npm package.
+- [ ] 7.3 Add changelog and versioning guidance.
+- [ ] 7.4 Run OpenSpec validation and update task status before implementation archive.

@@ -1,0 +1,18 @@
+schema: spec-driven
+
+context: |
+  Project: creditlint
+  Package manager: pnpm
+  Initial runtime: TypeScript CLI on Node.js
+  Domain: Git commit metadata, authorship/credit policy, AI-agent provenance, CI governance
+  Product boundary: creditlint detects and enforces credit/authorship metadata policy; it is not a legal compliance engine and does not detect whether code was AI-generated.
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
