@@ -229,3 +229,86 @@ fn matches_pattern(pattern: &str, value: &str, rule_id: &str) -> Result<bool, An
 
     Ok(regex.is_match(value))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{Policy, Source, SourceKind};
+
+    fn test_source() -> Source {
+        Source {
+            kind: SourceKind::MessageFile,
+            path: None,
+            commit_sha: Some("abc123".to_string()),
+        }
+    }
+
+    #[test]
+    fn default_policy_rejects_ai_coauthor_trailer() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(test_source(), "Co-authored-by: Codex <codex@example.com>")
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "forbidden-ai-coauthor");
+    }
+
+    #[test]
+    fn default_policy_rejects_made_with_marker() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(test_source(), "Made with Cursor")
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "forbidden-made-with-marker");
+    }
+
+    #[test]
+    fn default_policy_allows_human_coauthor() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(test_source(), "Co-authored-by: Jane Doe <jane@example.com>")
+            .expect("analysis should succeed");
+
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn default_policy_allows_allowed_provenance_marker() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(test_source(), "AI-Assisted: true")
+            .expect("analysis should succeed");
+
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn freeform_matching_does_not_flag_normal_prose() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(test_source(), "The fix was made with care.")
+            .expect("analysis should succeed");
+
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn structured_violation_contains_source_line_and_commit_sha() {
+        let policy = Policy::default();
+        let source = test_source();
+        let violations = policy
+            .analyze(
+                source,
+                "subject line\nCo-authored-by: Codex <codex@example.com>",
+            )
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].line, Some(2));
+        assert_eq!(violations[0].source.kind, SourceKind::MessageFile);
+        assert_eq!(violations[0].source.commit_sha.as_deref(), Some("abc123"));
+        assert_eq!(violations[0].field.as_deref(), Some("Co-authored-by"));
+    }
+}

@@ -211,3 +211,106 @@ fn validate_pattern(pattern: &str, index: usize, matcher_name: &str) -> Result<(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use std::fs;
+
+    use tempfile::tempdir;
+
+    use super::{ConfigError, load_policy};
+    use crate::policy::{FieldMatcher, RuleKind, Source, SourceKind};
+
+    #[test]
+    fn loads_custom_rule_from_config_file() {
+        let temp_dir = tempdir().expect("tempdir");
+        let repo_root = temp_dir.path();
+        fs::create_dir(repo_root.join(".git")).expect("git dir");
+        let nested = repo_root.join("nested");
+        fs::create_dir(&nested).expect("nested dir");
+
+        fs::write(
+            repo_root.join(".creditlint.yml"),
+            r#"
+version: 1
+rules:
+  forbidden_trailers:
+    - key: X-Custom-Attribution
+      value_pattern: "(?i)agent"
+  allowed_provenance_trailers:
+    - Tool-Used
+"#,
+        )
+        .expect("config file");
+
+        let policy = load_policy(&nested).expect("load policy");
+
+        assert_eq!(
+            policy.allowed_provenance_keys,
+            vec!["Tool-Used".to_string()]
+        );
+        assert_eq!(policy.rules.len(), 1);
+        assert_eq!(policy.rules[0].kind, RuleKind::ForbiddenTrailer);
+        assert_eq!(
+            policy.rules[0].field_matcher,
+            FieldMatcher::Exact("X-Custom-Attribution".to_string())
+        );
+    }
+
+    #[test]
+    fn invalid_config_fails_closed() {
+        let temp_dir = tempdir().expect("tempdir");
+        let repo_root = temp_dir.path();
+        fs::create_dir(repo_root.join(".git")).expect("git dir");
+
+        fs::write(
+            repo_root.join(".creditlint.yml"),
+            "version: 1\nrules:\n  forbidden_trailers:\n    - key: [\n",
+        )
+        .expect("config file");
+
+        let error = load_policy(repo_root).expect_err("invalid config should fail");
+        assert!(matches!(error, ConfigError::Parse { .. }));
+    }
+
+    #[test]
+    fn invalid_regex_pattern_fails_closed() {
+        let temp_dir = tempdir().expect("tempdir");
+        let repo_root = temp_dir.path();
+        fs::create_dir(repo_root.join(".git")).expect("git dir");
+
+        fs::write(
+            repo_root.join(".creditlint.yml"),
+            r#"
+version: 1
+rules:
+  forbidden_trailers:
+    - key: X-Bad
+      value_pattern: "["
+"#,
+        )
+        .expect("config file");
+
+        let error = load_policy(repo_root).expect_err("invalid regex should fail");
+        assert!(matches!(error, ConfigError::Validation(_)));
+    }
+
+    #[test]
+    fn missing_config_uses_default_policy() {
+        let temp_dir = tempdir().expect("tempdir");
+        let repo_root = temp_dir.path();
+        fs::create_dir(repo_root.join(".git")).expect("git dir");
+
+        let policy = load_policy(repo_root).expect("default policy");
+        let source = Source {
+            kind: SourceKind::MessageFile,
+            path: None,
+            commit_sha: None,
+        };
+        let violations = policy
+            .analyze(source, "Co-authored-by: Codex <codex@example.com>")
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+    }
+}
