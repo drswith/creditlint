@@ -1,7 +1,8 @@
 use std::fs;
+use std::io::{self, Read};
 use std::path::PathBuf;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{ArgGroup, Args, Parser, Subcommand};
 use thiserror::Error;
 
 use crate::config::{ConfigError, load_policy_from_current_dir};
@@ -21,9 +22,16 @@ enum Commands {
 }
 
 #[derive(Debug, Args)]
+#[command(group(
+    ArgGroup::new("input")
+        .required(true)
+        .args(["message_file", "stdin"])
+))]
 struct CheckArgs {
     #[arg(long)]
-    message_file: PathBuf,
+    message_file: Option<PathBuf>,
+    #[arg(long)]
+    stdin: bool,
 }
 
 pub fn run() -> Result<(), CliError> {
@@ -36,16 +44,34 @@ pub fn run() -> Result<(), CliError> {
 
 fn run_check(args: CheckArgs) -> Result<(), CliError> {
     let policy = load_policy_from_current_dir().map_err(CliError::Config)?;
-    let content =
-        fs::read_to_string(&args.message_file).map_err(|source| CliError::ReadMessage {
-            path: args.message_file.clone(),
-            source,
-        })?;
-    let source = Source {
-        kind: SourceKind::MessageFile,
-        path: Some(args.message_file),
-        commit_sha: None,
+    let (content, source) = match (args.message_file, args.stdin) {
+        (Some(path), false) => {
+            let content = fs::read_to_string(&path).map_err(|source| CliError::ReadMessage {
+                path: path.clone(),
+                source,
+            })?;
+            let source = Source {
+                kind: SourceKind::MessageFile,
+                path: Some(path),
+                commit_sha: None,
+            };
+            (content, source)
+        }
+        (None, true) => {
+            let mut content = String::new();
+            io::stdin()
+                .read_to_string(&mut content)
+                .map_err(CliError::ReadStdin)?;
+            let source = Source {
+                kind: SourceKind::Stdin,
+                path: None,
+                commit_sha: None,
+            };
+            (content, source)
+        }
+        _ => return Err(CliError::InvalidInputSelection),
     };
+
     let violations = policy
         .analyze(source, &content)
         .map_err(CliError::AnalyzeMessage)?;
@@ -77,6 +103,8 @@ fn print_human_violations(violations: &[Violation]) {
 pub enum CliError {
     #[error("policy violations found")]
     PolicyViolation,
+    #[error("exactly one input source must be selected")]
+    InvalidInputSelection,
     #[error("failed to load policy")]
     Config(#[source] ConfigError),
     #[error("failed to read message file at {path}")]
@@ -85,6 +113,8 @@ pub enum CliError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to read message text from stdin")]
+    ReadStdin(#[source] std::io::Error),
     #[error("failed to analyze message")]
     AnalyzeMessage(#[source] AnalysisError),
 }
