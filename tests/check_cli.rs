@@ -1,6 +1,7 @@
 use std::fs;
 #[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
+use std::path::{Path, PathBuf};
 use std::process::{Command as ProcessCommand, Stdio};
 
 use assert_cmd::Command;
@@ -36,6 +37,22 @@ fn run_git<const N: usize>(repo: &std::path::Path, args: [&str; N]) {
     assert!(status.success(), "git command should succeed");
 }
 
+fn binary_dir() -> PathBuf {
+    Path::new(env!("CARGO_BIN_EXE_creditlint"))
+        .parent()
+        .expect("binary parent")
+        .to_path_buf()
+}
+
+fn path_with_creditlint_binary() -> std::ffi::OsString {
+    let current_path = std::env::var_os("PATH").unwrap_or_default();
+    let paths = std::env::split_paths(&current_path)
+        .chain(std::iter::once(binary_dir()))
+        .collect::<Vec<_>>();
+
+    std::env::join_paths(paths).expect("join PATH")
+}
+
 fn write_and_commit(
     repo: &std::path::Path,
     filename: &str,
@@ -57,6 +74,25 @@ fn write_and_commit(
     assert!(status.success(), "git commit should succeed");
 }
 
+fn commit_with_hook_path(
+    repo: &Path,
+    filename: &str,
+    contents: &str,
+    subject: &str,
+    body: Option<&str>,
+) -> std::process::Output {
+    fs::write(repo.join(filename), contents).expect("write file");
+    run_git(repo, ["add", filename]);
+
+    let mut command = ProcessCommand::new("git");
+    command.current_dir(repo).args(["commit", "-m", subject]);
+    if let Some(body) = body {
+        command.args(["-m", body]);
+    }
+    command.env("PATH", path_with_creditlint_binary());
+    command.output().expect("git commit output")
+}
+
 fn head_sha(repo: &std::path::Path) -> String {
     let output = ProcessCommand::new("git")
         .current_dir(repo)
@@ -69,6 +105,17 @@ fn head_sha(repo: &std::path::Path) -> String {
         .expect("sha utf8")
         .trim()
         .to_string()
+}
+
+fn has_head(repo: &Path) -> bool {
+    ProcessCommand::new("git")
+        .current_dir(repo)
+        .args(["rev-parse", "--verify", "HEAD"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("rev-parse HEAD")
+        .success()
 }
 
 #[test]
@@ -167,6 +214,63 @@ fn install_hook_replaces_existing_managed_hook() {
     let hook = fs::read_to_string(&hook_path).expect("hook file");
     assert!(hook.contains("creditlint check --message-file \"$1\""));
     assert!(!hook.contains("echo old hook"));
+}
+
+#[test]
+fn managed_hook_blocks_violating_commit() {
+    let repo = init_git_repo();
+
+    let install = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+    assert_eq!(install.status.code(), Some(0));
+
+    let output = commit_with_hook_path(
+        repo.path(),
+        "blocked.txt",
+        "blocked\n",
+        "blocked commit",
+        Some("Co-authored-by: Codex <codex@example.com>"),
+    );
+
+    assert!(
+        !output.status.success(),
+        "commit should be rejected by hook"
+    );
+    assert!(
+        !has_head(repo.path()),
+        "rejected commit should not create HEAD"
+    );
+}
+
+#[test]
+fn managed_hook_allows_clean_commit() {
+    let repo = init_git_repo();
+
+    let install = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+    assert_eq!(install.status.code(), Some(0));
+
+    let output = commit_with_hook_path(
+        repo.path(),
+        "clean.txt",
+        "clean\n",
+        "clean commit",
+        Some("Reviewed-by: Jane Doe <jane@example.com>"),
+    );
+
+    assert!(output.status.success(), "clean commit should pass hook");
+    assert!(
+        has_head(repo.path()),
+        "successful commit should create HEAD"
+    );
 }
 
 #[test]

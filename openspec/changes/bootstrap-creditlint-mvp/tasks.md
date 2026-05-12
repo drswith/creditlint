@@ -57,3 +57,10 @@
 - [x] 7.3 Add changelog and versioning guidance.
 - [x] 7.4 Add `cross`-based or equivalent cross-platform release build support.
 - [x] 7.5 Run OpenSpec validation and update task status before implementation archive.
+
+## 8. Test Hardening
+
+- [x] 8.1 Add end-to-end tests that prove the managed `commit-msg` hook blocks violating commits and allows clean commits.
+- [ ] 8.2 Add CLI integration tests for repository-boundary behavior such as nested-directory config discovery and non-Git `init`/`install-hook` failures.
+- [ ] 8.3 Add unit and CLI tests for unsupported `github ruleset-pattern` export branches beyond allowed/forbidden overlap.
+- [ ] 8.4 Run Rust and OpenSpec validation again after test hardening and update task status.
