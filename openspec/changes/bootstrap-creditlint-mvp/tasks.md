@@ -10,7 +10,7 @@
 
 - [x] 2.1 Define policy, rule, source, and violation Rust types.
 - [x] 2.2 Implement built-in default policy for AI/tool authorship and credit markers.
-- [ ] 2.3 Implement `.creditlint.yml` loading with schema validation and fail-closed invalid-config behavior.
+- [x] 2.3 Implement `.creditlint.yml` loading with schema validation and fail-closed invalid-config behavior.
 - [ ] 2.4 Implement raw message analysis for trailer-like key-value lines and free-form marker lines.
 - [ ] 2.5 Add unit tests for default rejects, default allows, custom rules, invalid config, and structured violations.
 - [ ] 2.6 Implement and test forbidden-before-allowed rule precedence.

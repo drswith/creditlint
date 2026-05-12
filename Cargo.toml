@@ -9,3 +9,6 @@ repository = "https://github.com/Drswith/creditlint"
 rust-version = "1.93"
 
 [dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+serde_yaml = "0.9.34"
+thiserror = "2.0.17"
