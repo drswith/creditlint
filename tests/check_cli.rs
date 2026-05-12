@@ -376,3 +376,49 @@ fn audit_all_reports_violations() {
         "forbidden-made-with-marker"
     );
 }
+
+#[test]
+fn github_ruleset_pattern_exports_default_policy() {
+    let repo = make_repo();
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["github", "ruleset-pattern"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8(output.stdout).expect("stdout utf8");
+    assert!(stdout.contains("Co\\-authored\\-by"));
+    assert!(stdout.contains("made[- ]with"));
+}
+
+#[test]
+fn github_ruleset_pattern_fails_closed_for_unsupported_policy() {
+    let repo = make_repo();
+    fs::write(
+        repo.path().join(".creditlint.yml"),
+        r#"version: 1
+rules:
+  forbidden_trailers:
+    - key: Generated-by
+  allowed_provenance_trailers:
+    - Generated-by
+"#,
+    )
+    .expect("config");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["github", "ruleset-pattern"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("cannot be represented safely"),
+        "stderr should explain the fail-closed export"
+    );
+}

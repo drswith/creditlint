@@ -12,6 +12,7 @@ use crate::config::{
     load_policy_from_current_dir,
 };
 use crate::git::{GitError, collect_all_messages, collect_range_messages, commit_msg_hook_path};
+use crate::github::{RulesetExportError, export_ruleset_pattern};
 use crate::policy::{AnalysisError, Source, SourceKind};
 use crate::reporter::{OutputFormat, render_violations};
 
@@ -29,6 +30,7 @@ enum Commands {
     Audit(AuditArgs),
     Init,
     InstallHook,
+    Github(GithubArgs),
 }
 
 #[derive(Debug, Args)]
@@ -56,6 +58,17 @@ struct AuditArgs {
     format: OutputFormat,
 }
 
+#[derive(Debug, Args)]
+struct GithubArgs {
+    #[command(subcommand)]
+    command: GithubCommands,
+}
+
+#[derive(Debug, Subcommand)]
+enum GithubCommands {
+    RulesetPattern,
+}
+
 pub fn run() -> Result<(), CliError> {
     let cli = Cli::parse();
 
@@ -64,7 +77,21 @@ pub fn run() -> Result<(), CliError> {
         Commands::Audit(args) => run_audit(args),
         Commands::Init => run_init(),
         Commands::InstallHook => run_install_hook(),
+        Commands::Github(args) => run_github(args),
     }
+}
+
+fn run_github(args: GithubArgs) -> Result<(), CliError> {
+    match args.command {
+        GithubCommands::RulesetPattern => run_github_ruleset_pattern(),
+    }
+}
+
+fn run_github_ruleset_pattern() -> Result<(), CliError> {
+    let policy = load_policy_from_current_dir().map_err(CliError::Config)?;
+    let pattern = export_ruleset_pattern(&policy).map_err(CliError::RulesetExport)?;
+    println!("{pattern}");
+    Ok(())
 }
 
 const MANAGED_HOOK_MARKER: &str = "creditlint managed hook";
@@ -289,6 +316,8 @@ pub enum CliError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to export GitHub ruleset pattern: {0}")]
+    RulesetExport(#[source] RulesetExportError),
 }
 
 impl CliError {
@@ -306,7 +335,8 @@ impl CliError {
             | CliError::WriteConfig { .. }
             | CliError::ReadHook { .. }
             | CliError::UnmanagedHookExists { .. }
-            | CliError::WriteHook { .. } => 2,
+            | CliError::WriteHook { .. }
+            | CliError::RulesetExport(_) => 2,
         }
     }
 }

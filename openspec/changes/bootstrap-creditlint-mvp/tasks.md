@@ -44,8 +44,8 @@
 
 ## 6. GitHub Squash Merge Coverage
 
-- [ ] 6.1 Implement `creditlint github ruleset-pattern` for policies that can be represented as one safe regex.
-- [ ] 6.2 Make unsupported ruleset conversion fail closed with a clear explanation.
+- [x] 6.1 Implement `creditlint github ruleset-pattern` for policies that can be represented as one safe regex.
+- [x] 6.2 Make unsupported ruleset conversion fail closed with a clear explanation.
 - [ ] 6.3 Document GitHub ruleset metadata restriction setup for final squash commit messages.
 - [ ] 6.4 Document merge-bot validation with `creditlint check --message-file final-merge-message.txt`.
 - [ ] 6.5 Document which policy subsets are representable as one GitHub ruleset regex and which require merge-bot validation.
