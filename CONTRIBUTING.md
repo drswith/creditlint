@@ -196,3 +196,22 @@ creditlint check --message-file final-merge-message.txt
 
 The merge bot should run this against the exact message it is about to write,
 then fail closed on exit code `1` or `2`.
+
+## Ruleset Export Notes
+
+Keep the documented GitHub ruleset export boundary aligned with the current
+implementation.
+
+Supported subset:
+
+- exact forbidden trailer keys
+- trailer value exact strings, unanchored regexes, or `Any`
+- free-form rules expressed as one anchored line regex
+- no overlap between allowed provenance keys and forbidden trailer keys
+
+Unsupported subset:
+
+- precedence-sensitive overlap on the same trailer key
+- regex-matched trailer field names
+- non-anchored free-form prose matching
+- normalization or multi-pass logic

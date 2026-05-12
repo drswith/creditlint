@@ -234,6 +234,31 @@ This path is appropriate when:
 
 The merge bot should fail closed when `creditlint` exits with `1` or `2`.
 
+## Ruleset Export Boundary
+
+`creditlint github ruleset-pattern` intentionally supports only a conservative
+subset of policy behavior.
+
+Currently representable as one GitHub ruleset regex:
+
+- forbidden trailer rules with an exact trailer key
+- trailer value matchers that are exact strings, unanchored regexes, or `Any`
+- free-form marker rules expressed as one anchored line regex such as
+  `(?i)^made[- ]with\\b.*$`
+- policies where allowed provenance keys do not overlap any forbidden trailer
+  key
+
+Not representable safely as one GitHub ruleset regex:
+
+- policies that need forbidden/allowed precedence on the same trailer key
+- forbidden trailer rules that depend on regex-matched trailer field names
+- free-form rules that are not a single anchored line regex
+- policies that would require normalization or logic beyond one regex pass
+
+When the active policy falls outside the safe subset, `creditlint github
+ruleset-pattern` fails closed and points the repository to merge-bot validation
+for final squash messages.
+
 ## Privacy
 
 The planned CLI is local-first. By default, `creditlint` should not upload commit
