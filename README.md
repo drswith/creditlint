@@ -351,6 +351,16 @@ Implementation work should follow:
 openspec/changes/bootstrap-creditlint-mvp/tasks.md
 ```
 
+## Packaging
+
+The package metadata is prepared for native Rust distribution through:
+
+- crates.io for the `creditlint` crate
+- GitHub Releases for prebuilt binaries and release notes
+
+The published metadata points back to this repository and the future `docs.rs`
+documentation page for the crate.
+
 ## License
 
 MIT
