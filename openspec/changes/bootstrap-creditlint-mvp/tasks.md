@@ -14,7 +14,7 @@
 - [x] 2.4 Implement raw message analysis for trailer-like key-value lines and free-form marker lines.
 - [x] 2.5 Add unit tests for default rejects, default allows, custom rules, invalid config, and structured violations.
 - [x] 2.6 Implement and test forbidden-before-allowed rule precedence.
-- [ ] 2.7 Implement and test conservative free-form marker matching that avoids normal prose.
+- [x] 2.7 Implement and test conservative free-form marker matching that avoids normal prose.
 - [ ] 2.8 Document explicit threat model, bypass assumptions, and Unicode homoglyph out-of-scope behavior.
 
 ## 3. CLI Check Commands

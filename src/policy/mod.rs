@@ -97,6 +97,8 @@ impl Policy {
                 .iter()
                 .filter(|rule| rule.kind == RuleKind::FreeformMarker)
             {
+                // Free-form rules apply to the trimmed line as a whole so normal
+                // prose like "made with care" is not treated as a marker.
                 if rule.matches_freeform(trimmed)? {
                     violations.push(Violation {
                         source: source.clone(),
