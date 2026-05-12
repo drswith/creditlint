@@ -55,5 +55,5 @@
 - [x] 7.1 Add CI workflow that runs Cargo formatting, linting, tests, and release builds.
 - [x] 7.2 Add crates.io and GitHub Release publishing metadata for the `creditlint` package.
 - [x] 7.3 Add changelog and versioning guidance.
-- [ ] 7.4 Add `cross`-based or equivalent cross-platform release build support.
+- [x] 7.4 Add `cross`-based or equivalent cross-platform release build support.
 - [ ] 7.5 Run OpenSpec validation and update task status before implementation archive.

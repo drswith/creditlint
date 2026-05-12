@@ -52,6 +52,7 @@ Recommended local setup:
 ```sh
 cargo install just
 cargo install cargo-nextest
+cargo install cross
 ```
 
 Common development commands:
@@ -62,6 +63,8 @@ just fmt
 just lint
 just test
 just ci
+just release-build
+just cross-build x86_64-unknown-linux-gnu
 ```
 
 ## Commit Metadata

@@ -23,3 +23,9 @@ ci:
     cargo fmt --all --check
     cargo clippy --all-targets --all-features -- -D warnings
     cargo nextest run
+
+release-build:
+    cargo build --release
+
+cross-build target:
+    cross build --release --target {{target}}

@@ -328,6 +328,8 @@ just fmt
 just lint
 just test
 just ci
+just release-build
+just cross-build x86_64-unknown-linux-gnu
 ```
 
 Local prerequisites for the planned Rust workflow:
@@ -335,6 +337,7 @@ Local prerequisites for the planned Rust workflow:
 ```sh
 cargo install just
 cargo install cargo-nextest
+cargo install cross
 ```
 
 OpenSpec commands:
@@ -360,6 +363,14 @@ The package metadata is prepared for native Rust distribution through:
 
 The published metadata points back to this repository and the future `docs.rs`
 documentation page for the crate.
+
+For cross-platform release artifacts, use `cross` through the checked-in
+`just` recipes:
+
+```sh
+just cross-build x86_64-unknown-linux-gnu
+just cross-build x86_64-pc-windows-msvc
+```
 
 ## Versioning
 
