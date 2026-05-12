@@ -100,6 +100,25 @@ of a final squash merge message edited by the hosting platform UI.
 The planned CLI is local-first. By default, `creditlint` should not upload commit
 messages, pull request text, or policy files to any hosted service.
 
+## Threat Model
+
+The MVP is designed to catch:
+
+- Tools that automatically append authorship-like markers.
+- Contributors who accidentally paste AI/tool credit markers into commit or
+  pull request text.
+- Cloud-agent and CI paths that bypass local developer hooks.
+- Platform merge paths where the final protected-branch message can differ from
+  checked commits.
+
+Current out-of-scope evasions:
+
+- Unicode homoglyph spoofing such as visually similar non-ASCII characters.
+- Deliberately split or obfuscated markers intended to bypass simple line-based
+  detection.
+- Administrator bypass of repository rules.
+- Direct protected-branch writes outside the enforced workflow.
+
 ## Development
 
 Use Cargo for implementation work. The OpenSpec CLI is currently invoked through

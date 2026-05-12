@@ -78,6 +78,18 @@ Generated with ...
 If process disclosure is needed, prefer explicit provenance metadata documented
 by the project rather than authorship trailers.
 
+## Threat Model Notes
+
+The current MVP is intended to stop default or accidental credit/authorship
+markers in normal Git workflows.
+
+It is not yet intended to fully defeat deliberate evasion techniques such as:
+
+- Unicode homoglyph spoofing
+- Obfuscated or split markers
+- Administrator bypass of repository rules
+- Direct protected-branch writes
+
 ## Pull Requests
 
 Pull requests should describe:
