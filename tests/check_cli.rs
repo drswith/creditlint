@@ -526,3 +526,70 @@ rules:
         "stderr should explain the fail-closed export"
     );
 }
+
+#[test]
+fn nested_directory_check_uses_repo_root_config() {
+    let repo = init_git_repo();
+    let nested_dir = repo.path().join("nested/deeper");
+    fs::create_dir_all(&nested_dir).expect("nested dir");
+    fs::write(
+        repo.path().join(".creditlint.yml"),
+        r#"version: 1
+rules:
+  forbidden_trailers:
+    - key: X-Custom-Attribution
+      value_pattern: "(?i)agent"
+"#,
+    )
+    .expect("config");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(&nested_dir)
+        .args(["check", "--stdin"])
+        .write_stdin("X-Custom-Attribution: agent\n")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert!(
+        String::from_utf8_lossy(&output.stdout).contains("config-forbidden-rule-0"),
+        "stdout should reflect the repo-root policy"
+    );
+}
+
+#[test]
+fn init_outside_git_repo_fails_closed() {
+    let temp_dir = tempdir().expect("tempdir");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(temp_dir.path())
+        .arg("init")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("failed to load policy"),
+        "stderr should explain the init failure"
+    );
+}
+
+#[test]
+fn install_hook_outside_git_repo_fails_closed() {
+    let temp_dir = tempdir().expect("tempdir");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(temp_dir.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        !output.stderr.is_empty(),
+        "stderr should be non-empty for missing git metadata"
+    );
+}
