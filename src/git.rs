@@ -87,7 +87,7 @@ fn parse_git_log_stream<R: BufRead>(reader: R) -> Result<Vec<CommitMessage>, Git
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(parse_git_log_records(records.into_iter()))
+    Ok(parse_git_log_records(records))
 }
 
 fn parse_git_log_records<I>(records: I) -> Vec<CommitMessage>
