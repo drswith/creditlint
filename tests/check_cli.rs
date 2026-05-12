@@ -593,3 +593,31 @@ fn install_hook_outside_git_repo_fails_closed() {
         "stderr should be non-empty for missing git metadata"
     );
 }
+
+#[test]
+fn github_ruleset_pattern_fails_closed_for_regex_trailer_keys() {
+    let repo = make_repo();
+    fs::write(
+        repo.path().join(".creditlint.yml"),
+        r#"version: 1
+rules:
+  forbidden_trailers:
+    - key_pattern: "(?i)x-.*"
+      value_pattern: "agent"
+"#,
+    )
+    .expect("config");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["github", "ruleset-pattern"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("requires an exact trailer key"),
+        "stderr should explain the unsupported regex trailer key"
+    );
+}

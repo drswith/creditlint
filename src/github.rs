@@ -185,4 +185,76 @@ mod tests {
         let error = export_ruleset_pattern(&policy).expect_err("overlap should fail");
         assert!(error.to_string().contains("cannot be represented safely"));
     }
+
+    #[test]
+    fn fails_for_regex_matched_trailer_field_names() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "regex-trailer-field".to_string(),
+                kind: RuleKind::ForbiddenTrailer,
+                field_matcher: FieldMatcher::Pattern("(?i)x-.*".to_string()),
+                value_matcher: ValueMatcher::Pattern("agent".to_string()),
+                message: "no regex keys".to_string(),
+            }],
+            allowed_provenance_keys: vec![],
+        };
+
+        let error = export_ruleset_pattern(&policy).expect_err("regex field should fail");
+        assert!(error.to_string().contains("requires an exact trailer key"));
+    }
+
+    #[test]
+    fn fails_for_anchored_trailer_value_patterns() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "anchored-trailer-value".to_string(),
+                kind: RuleKind::ForbiddenTrailer,
+                field_matcher: FieldMatcher::Exact("Co-authored-by".to_string()),
+                value_matcher: ValueMatcher::Pattern("(?i)^codex$".to_string()),
+                message: "no anchored values".to_string(),
+            }],
+            allowed_provenance_keys: vec![],
+        };
+
+        let error = export_ruleset_pattern(&policy).expect_err("anchored value should fail");
+        assert!(error.to_string().contains("must not use ^ or $ anchors"));
+    }
+
+    #[test]
+    fn fails_for_unanchored_freeform_patterns() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "freeform-prose".to_string(),
+                kind: RuleKind::FreeformMarker,
+                field_matcher: FieldMatcher::Any,
+                value_matcher: ValueMatcher::Pattern("(?i)made with".to_string()),
+                message: "no prose export".to_string(),
+            }],
+            allowed_provenance_keys: vec![],
+        };
+
+        let error = export_ruleset_pattern(&policy).expect_err("unanchored freeform should fail");
+        assert!(error.to_string().contains("requires ^...$ line anchors"));
+    }
+
+    #[test]
+    fn fails_for_extra_inline_regex_flags() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "inline-flags".to_string(),
+                kind: RuleKind::FreeformMarker,
+                field_matcher: FieldMatcher::Any,
+                value_matcher: ValueMatcher::Pattern("(?i)(?m)^made with$".to_string()),
+                message: "no inline flags".to_string(),
+            }],
+            allowed_provenance_keys: vec![],
+        };
+
+        let error = export_ruleset_pattern(&policy).expect_err("extra flags should fail");
+        assert!(
+            error
+                .to_string()
+                .contains("inline regex flags beyond a leading (?i) are not supported")
+        );
+    }
 }
