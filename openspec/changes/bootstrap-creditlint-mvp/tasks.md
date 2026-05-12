@@ -70,4 +70,4 @@
 - [x] 9.1 Add a release-binary smoke test that executes the compiled `target/release/creditlint` artifact in CI.
 - [x] 9.2 Add a delivery workflow that builds native release artifacts for supported platforms and uploads them as workflow artifacts or release assets.
 - [x] 9.3 Update project docs and status text from bootstrap/planning language to delivery-ready language, including the release-artifact path.
-- [ ] 9.4 Run Rust and OpenSpec validation again after delivery-stage changes and update task status.
+- [x] 9.4 Run Rust and OpenSpec validation again after delivery-stage changes and update task status.
