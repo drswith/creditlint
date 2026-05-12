@@ -119,6 +119,18 @@ Current out-of-scope evasions:
 - Administrator bypass of repository rules.
 - Direct protected-branch writes outside the enforced workflow.
 
+## Performance
+
+The current Git collection path is intended to stream `git log` output
+record-by-record instead of first loading the full raw log into memory.
+
+Current budget:
+
+- Memory growth should be bounded by the current record being parsed plus the
+  accumulated violation list, not the full raw `git log` output.
+- `audit --all` should remain practical on normal repository histories without
+  requiring the full commit-message stream to be buffered at once.
+
 ## Development
 
 Use Cargo for implementation work. The OpenSpec CLI is currently invoked through

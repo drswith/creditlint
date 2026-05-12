@@ -31,7 +31,7 @@
 - [x] 4.2 Include commit SHAs in violations from Git range checks.
 - [x] 4.3 Implement `audit --all` for all reachable commit messages.
 - [x] 4.4 Add temporary-repository integration tests for clean ranges, violating ranges, invalid ranges, and audit mode.
-- [ ] 4.5 Add an audit performance budget and verify commit metadata is processed incrementally.
+- [x] 4.5 Add an audit performance budget and verify commit metadata is processed incrementally.
 
 ## 5. Workflow Integrations
 

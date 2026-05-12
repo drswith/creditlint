@@ -1,4 +1,5 @@
-use std::process::Command;
+use std::io::{BufRead, BufReader, Read};
+use std::process::{Command, Stdio};
 
 use thiserror::Error;
 
@@ -23,25 +24,57 @@ fn collect_git_messages<const N: usize>(
     args: [&str; N],
     scope: &str,
 ) -> Result<Vec<CommitMessage>, GitError> {
-    let output = Command::new("git")
+    let mut child = Command::new("git")
         .args(args)
-        .output()
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(GitError::Spawn)?;
 
-    if !output.status.success() {
+    let stdout = child.stdout.take().ok_or(GitError::MissingStdout)?;
+    let messages = parse_git_log_stream(BufReader::new(stdout))?;
+    let status = child.wait().map_err(GitError::Wait)?;
+
+    let mut stderr = String::new();
+    if let Some(mut stderr_pipe) = child.stderr.take() {
+        stderr_pipe
+            .read_to_string(&mut stderr)
+            .map_err(GitError::ReadStderr)?;
+    }
+
+    if !status.success() {
         return Err(GitError::CommandFailed {
             range: scope.to_string(),
-            stderr: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+            stderr: stderr.trim().to_string(),
         });
     }
 
-    let stdout = String::from_utf8(output.stdout).map_err(GitError::InvalidUtf8)?;
-    Ok(parse_git_log_output(&stdout))
+    Ok(messages)
 }
 
+#[cfg(test)]
 fn parse_git_log_output(stdout: &str) -> Vec<CommitMessage> {
-    stdout
-        .split(RECORD_SEPARATOR)
+    parse_git_log_records(stdout.split(RECORD_SEPARATOR).map(str::to_string))
+}
+
+fn parse_git_log_stream<R: BufRead>(reader: R) -> Result<Vec<CommitMessage>, GitError> {
+    let records = reader
+        .split(RECORD_SEPARATOR as u8)
+        .map(|chunk| {
+            let bytes = chunk.map_err(GitError::ReadStdout)?;
+            String::from_utf8(bytes).map_err(GitError::InvalidUtf8)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+
+    Ok(parse_git_log_records(records.into_iter()))
+}
+
+fn parse_git_log_records<I>(records: I) -> Vec<CommitMessage>
+where
+    I: IntoIterator<Item = String>,
+{
+    records
+        .into_iter()
         .filter_map(|record| {
             let trimmed = record.trim_matches('\n');
             if trimmed.is_empty() {
@@ -61,15 +94,25 @@ fn parse_git_log_output(stdout: &str) -> Vec<CommitMessage> {
 pub enum GitError {
     #[error("failed to execute git")]
     Spawn(#[source] std::io::Error),
+    #[error("failed while waiting for git to finish")]
+    Wait(#[source] std::io::Error),
+    #[error("git process did not expose stdout")]
+    MissingStdout,
     #[error("git log failed for range `{range}`: {stderr}")]
     CommandFailed { range: String, stderr: String },
+    #[error("failed to read git stdout")]
+    ReadStdout(#[source] std::io::Error),
+    #[error("failed to read git stderr")]
+    ReadStderr(#[source] std::io::Error),
     #[error("git output was not valid UTF-8")]
     InvalidUtf8(#[source] std::string::FromUtf8Error),
 }
 
 #[cfg(test)]
 mod tests {
-    use super::parse_git_log_output;
+    use std::io::Cursor;
+
+    use super::{parse_git_log_output, parse_git_log_stream};
 
     #[test]
     fn parses_git_log_output_with_record_separator() {
@@ -82,5 +125,17 @@ mod tests {
         assert_eq!(parsed[0].message, "subject line\nbody line");
         assert_eq!(parsed[1].sha, "def456");
         assert_eq!(parsed[1].message, "second subject");
+    }
+
+    #[test]
+    fn parses_git_log_stream_incrementally() {
+        let parsed = parse_git_log_stream(Cursor::new(
+            b"abc123\x1fsubject line\nbody line\x1edef456\x1fsecond subject\x1e".to_vec(),
+        ))
+        .expect("parse stream");
+
+        assert_eq!(parsed.len(), 2);
+        assert_eq!(parsed[0].sha, "abc123");
+        assert_eq!(parsed[1].sha, "def456");
     }
 }
