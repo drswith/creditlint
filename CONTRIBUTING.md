@@ -47,6 +47,23 @@ Release-only tooling:
 
 - `cross` or an equivalent cross-platform release builder
 
+Recommended local setup:
+
+```sh
+cargo install just
+cargo install cargo-nextest
+```
+
+Common development commands:
+
+```sh
+just check
+just fmt
+just lint
+just test
+just ci
+```
+
 ## Commit Metadata
 
 This project is specifically about credit and authorship metadata. Contributors

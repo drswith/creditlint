@@ -114,6 +114,23 @@ Planned Rust tooling:
 - `cargo-watch` is optional for local edit/test loops.
 - `cross` is reserved for release builds.
 
+Common commands:
+
+```sh
+just check
+just fmt
+just lint
+just test
+just ci
+```
+
+Local prerequisites for the planned Rust workflow:
+
+```sh
+cargo install just
+cargo install cargo-nextest
+```
+
 OpenSpec commands:
 
 ```sh
