@@ -32,3 +32,6 @@ jobs:
 
       - name: Build release binary
         run: cargo build --release
+
+      - name: Smoke test release binary
+        run: ./scripts/smoke-release-binary.sh ./target/release/creditlint
