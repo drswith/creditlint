@@ -22,12 +22,30 @@ Implementation should follow:
 openspec/changes/bootstrap-creditlint-mvp/tasks.md
 ```
 
-## Package Manager
+## Tooling
 
-Use pnpm for all package operations.
+Use Cargo for implementation work.
 
-Do not add lockfiles or project metadata for other package managers unless a
-future OpenSpec change requires it.
+Use pnpm only for OpenSpec commands shown in this document. Do not add npm,
+Yarn, or Bun runtime requirements for `creditlint` unless a future OpenSpec
+change requires an optional wrapper package.
+
+Expected Rust tooling:
+
+- Rust stable from `rust-toolchain.toml`
+- `rustfmt` and `clippy`
+- `just` for project command shortcuts once available
+- `cargo-nextest` for the preferred test workflow once configured
+
+Optional local tools:
+
+- `cargo-watch` for edit/test loops
+- `bacon` if you personally prefer it
+- `cargo-edit` for local dependency editing
+
+Release-only tooling:
+
+- `cross` or an equivalent cross-platform release builder
 
 ## Commit Metadata
 

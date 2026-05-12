@@ -13,7 +13,8 @@ policy in Git workflows.
 ## What Changes
 
 - Add the first `creditlint` product specification and implementation plan.
-- Define a pnpm-managed TypeScript CLI MVP.
+- Define a Rust native CLI MVP that does not require Node.js, npm, or pnpm in
+  consuming repositories.
 - Define default policy behavior for authorship and provenance metadata.
 - Define CLI commands for checking raw messages, commit message files, Git
   ranges, and full-history audits.
@@ -39,8 +40,9 @@ policy in Git workflows.
 ## Impact
 
 - Adds OpenSpec project governance for `creditlint`.
-- Establishes TypeScript + Node.js as the initial implementation stack, managed
-  with pnpm.
+- Establishes Rust + Cargo as the initial implementation stack.
+- Keeps pnpm only as a convenient runner for OpenSpec commands during
+  repository planning.
 - Future implementation will add package metadata, source files, tests, README
   usage, and release automation.
 - GitHub ruleset support will require documentation because it depends on

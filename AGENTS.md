@@ -4,8 +4,8 @@ Guidance for coding agents working in this repository.
 
 ## Project
 
-`creditlint` is a pnpm-managed TypeScript CLI for enforcing Git credit and
-authorship metadata policy.
+`creditlint` is a Rust native CLI for enforcing Git credit and authorship
+metadata policy.
 
 The product boundary is narrow:
 
@@ -39,14 +39,26 @@ pnpm dlx @fission-ai/openspec validate --all
 pnpm dlx @fission-ai/openspec status --change bootstrap-creditlint-mvp --json
 ```
 
-## Package Manager
+## Tooling
 
-Use pnpm. Do not introduce npm, Yarn, Bun, or Cargo project files unless a future
-OpenSpec change explicitly calls for that.
+Use Cargo for implementation work. Use `pnpm dlx @fission-ai/openspec` only for
+OpenSpec commands until the repository provides a pinned OpenSpec runner.
+
+Do not introduce npm, Yarn, or Bun runtime requirements for `creditlint` unless a
+future OpenSpec change explicitly calls for an optional wrapper package.
+
+Expected Rust tooling:
+
+- Use the checked-in `rust-toolchain.toml`.
+- Prefer `just` recipes once a `justfile` exists.
+- Prefer `cargo nextest run` for tests once configured.
+- Treat `cargo-watch` as optional local convenience.
+- Use `cross` only for release packaging tasks.
+- Do not make `bacon` or `cargo-edit` required project tooling.
 
 ## Implementation Conventions
 
-- Keep the policy engine independent from CLI command handlers.
+- Keep the Rust policy engine independent from CLI command handlers.
 - Prefer structured violation objects before formatting terminal output.
 - Preserve fail-closed behavior for invalid config, unreadable input, and failed
   Git metadata collection.

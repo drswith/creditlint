@@ -1,14 +1,14 @@
 ## 1. Project Bootstrap
 
-- [ ] 1.1 Create pnpm-managed TypeScript package metadata, lockfile, and CLI bin entry.
-- [ ] 1.2 Add TypeScript, test runner, formatter/linter, and build scripts.
-- [ ] 1.3 Create initial source layout for CLI commands, policy engine, config loading, and reporters.
+- [ ] 1.1 Create Cargo-managed Rust package metadata and `creditlint` CLI bin entry.
+- [ ] 1.2 Add `rust-toolchain.toml`, Rust formatting/linting/test commands, `just` recipes, and `cargo-nextest` workflow documentation.
+- [ ] 1.3 Create initial Rust source layout for CLI commands, policy engine, config loading, and reporters.
 - [x] 1.4 Add README with problem statement, install placeholder, and first command examples.
 - [x] 1.5 Add AGENTS, CONTRIBUTING, and CHANGELOG project entry documents.
 
 ## 2. Policy Engine
 
-- [ ] 2.1 Define policy, rule, source, and violation TypeScript types.
+- [ ] 2.1 Define policy, rule, source, and violation Rust types.
 - [ ] 2.2 Implement built-in default policy for AI/tool authorship and credit markers.
 - [ ] 2.3 Implement `.creditlint.yml` loading with schema validation and fail-closed invalid-config behavior.
 - [ ] 2.4 Implement raw message analysis for trailer-like key-value lines and free-form marker lines.
@@ -37,7 +37,7 @@
 
 - [ ] 5.1 Implement `creditlint init` that writes `.creditlint.yml` without overwriting existing config.
 - [ ] 5.2 Implement `creditlint install-hook` with stable managed-hook markers and safe handling for existing unmanaged `commit-msg` hooks.
-- [ ] 5.3 Add GitHub Actions documentation using pnpm and full-history checkout for range checks.
+- [ ] 5.3 Add GitHub Actions documentation using the native binary or Cargo and full-history checkout for range checks.
 - [ ] 5.4 Add local Git hook and pre-commit documentation.
 - [ ] 5.5 Document pull request title/body validation by writing PR text to a file and using `check --message-file`.
 - [ ] 5.6 Document the default no-telemetry/no-network privacy boundary.
@@ -52,7 +52,8 @@
 
 ## 7. Release Readiness
 
-- [ ] 7.1 Add CI workflow that installs with pnpm, runs tests, and builds the CLI.
-- [ ] 7.2 Add package publishing metadata for the `creditlint` npm package.
+- [ ] 7.1 Add CI workflow that runs Cargo formatting, linting, tests, and release builds.
+- [ ] 7.2 Add crates.io and GitHub Release publishing metadata for the `creditlint` package.
 - [ ] 7.3 Add changelog and versioning guidance.
-- [ ] 7.4 Run OpenSpec validation and update task status before implementation archive.
+- [ ] 7.4 Add `cross`-based or equivalent cross-platform release build support.
+- [ ] 7.5 Run OpenSpec validation and update task status before implementation archive.

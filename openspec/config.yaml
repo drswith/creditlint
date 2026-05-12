@@ -2,8 +2,8 @@ schema: spec-driven
 
 context: |
   Project: creditlint
-  Package manager: pnpm
-  Initial runtime: TypeScript CLI on Node.js
+  Implementation stack: Rust native CLI managed with Cargo
+  OpenSpec command runner: pnpm dlx @fission-ai/openspec
   Domain: Git commit metadata, authorship/credit policy, AI-agent provenance, CI governance
   Product boundary: creditlint detects and enforces credit/authorship metadata policy; it is not a legal compliance engine and does not detect whether code was AI-generated.
 

@@ -9,10 +9,11 @@ approval. The design needs to preserve a distinction between authorship signals
 such as `Co-authored-by` and provenance/disclosure signals such as
 `AI-Assisted`.
 
-The repository will use pnpm as the package manager. The initial implementation
-should be a TypeScript CLI because npm distribution and CI adoption are the
-fastest path for this kind of developer tool. A native binary can remain a later
-distribution optimization.
+The implementation should be a Rust native CLI managed with Cargo. `creditlint`
+is intended to run in many repositories, including backend, systems, infra, and
+polyglot projects that may not have Node.js, npm, or pnpm installed. A native
+binary keeps the consuming-project integration surface small. pnpm remains
+useful only as a local runner for OpenSpec commands during planning.
 
 ## Goals / Non-Goals
 
@@ -54,22 +55,55 @@ documented so users understand the enforcement boundary.
 
 ## Decisions
 
-### Use pnpm + TypeScript for the MVP
+### Use Rust native CLI for the MVP
 
-The project will use pnpm-managed TypeScript for the initial CLI.
+The project will use Rust and Cargo for the initial CLI.
 
 Rationale:
 
-- npm distribution is the most direct path for JavaScript/TypeScript projects
-  and CI workflows.
-- pnpm gives reproducible package management without choosing a heavier
-  monorepo structure before it is needed.
-- The problem is mostly text parsing, Git command orchestration, config loading,
-  and reporting; TypeScript is sufficient for the first implementation.
+- `creditlint` is a low-level workflow tool that should be easy to install in
+  projects that do not already have a JavaScript toolchain.
+- A single native binary works well for Git hooks, CI jobs, merge bots, and
+  repository policy automation.
+- Rust gives strong types, predictable error handling, fast startup, and good
+  libraries for CLI parsing, regex, YAML, and structured output.
+- crates.io, GitHub Releases, Homebrew, and optional npm wrapper packages can
+  cover broad distribution without making Node.js a runtime requirement.
 
-Alternative considered: Rust binary first. Rust would make a good later native
-distribution target, but it adds packaging overhead before the product contract
-is validated.
+Alternative considered: TypeScript/npm first. That would speed up npm
+publication, but it would make the default installation path depend on a
+toolchain many target repositories do not otherwise need.
+
+### Keep Rust tooling small and standardized
+
+The repository should include a minimal Rust tooling baseline:
+
+- `rust-toolchain.toml` to pin the stable channel and required components
+  (`rustfmt`, `clippy`).
+- `just` for a small, readable command runner around common Cargo workflows.
+- `cargo-nextest` for fast, reliable test execution in CI and local development.
+- `cargo-watch` as an optional local development helper.
+- `cross` only for release builds that need cross-platform artifacts.
+
+The repository should not require `bacon` or `cargo-edit` for normal
+development. They are useful personal tools, but they should not become project
+requirements for the MVP.
+
+Rationale:
+
+- `just` makes commands discoverable without hiding Cargo.
+- `cargo-nextest` improves test speed and reporting once integration tests create
+  temporary Git repositories.
+- `cargo-watch` and `bacon` overlap; documenting `cargo-watch` as optional keeps
+  the baseline lighter.
+- `cargo-edit` helps edit dependencies interactively, but dependency changes
+  should still be explicit in `Cargo.toml` review.
+- `cross` is valuable for release packaging, but not needed for the first local
+  development loop.
+
+Alternative considered: require the full Rust CLI tool stack from the start.
+That would make contributor setup heavier before the project has enough code to
+benefit from it.
 
 ### Keep the policy engine independent from the CLI
 
@@ -140,7 +174,7 @@ safer for a narrow policy but too disruptive for common GitHub workflows.
 ### Use conservative text parsing first, structured trailer parsing later if needed
 
 The MVP should detect trailer-like lines and common marker lines directly in
-TypeScript. It should keep the parser structured enough to report fields, line
+Rust. It should keep the parser structured enough to report fields, line
 numbers, and rule IDs. If Git trailer compatibility becomes a problem, a later
 change can shell out to `git interpret-trailers` or port stricter parsing.
 
@@ -195,14 +229,15 @@ is simpler but too noisy for commit bodies and pull request bodies.
 This is a new project, so there is no runtime migration. Implementation should
 land in stages:
 
-1. Bootstrap pnpm package metadata, TypeScript build/test tooling, and CLI
-   entrypoint.
+1. Bootstrap Cargo package metadata, rust-toolchain, just recipes, Rust
+   build/test tooling, and CLI entrypoint.
 2. Implement the policy engine with unit tests.
 3. Add `check` input modes and output formats.
 4. Add Git range/audit commands and integration tests using temporary repos.
 5. Add `init`, hook installation, and CI examples.
 6. Add PR title/body text-file validation documentation.
 7. Add GitHub ruleset pattern generation after core behavior is stable.
+8. Add release packaging with GitHub Releases and cross-platform builds.
 
 Rollback strategy is simple before first release: revert the change or adjust
 the active OpenSpec proposal before implementation is archived.
@@ -211,7 +246,6 @@ the active OpenSpec proposal before implementation is archived.
 
 - Should SARIF output be part of the first CI release or a later annotation
   feature?
-- Should the package ship only as an npm CLI first, or reserve binary wrapper
-  package structure from the beginning?
+- Should an optional npm wrapper be added after the first native binary release?
 - Should Unicode normalization and homoglyph detection be added after the MVP,
   or only documented as an out-of-scope evasion?

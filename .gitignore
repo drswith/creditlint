@@ -1,13 +1,12 @@
-# Dependencies
-node_modules/
+# Rust build output
+target/
 
-# Build output
-dist/
-build/
+# Coverage and test output
 coverage/
+tarpaulin-report.html
 
-# TypeScript
-*.tsbuildinfo
+# Local Rust tool caches
+.bacon-locations
 
 # Logs
 *.log

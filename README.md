@@ -17,8 +17,12 @@ Active change:
 
 Current implementation target:
 
-- Package manager: pnpm
-- Runtime: TypeScript CLI on Node.js
+- Implementation stack: Rust native CLI
+- Build/package manager: Cargo
+- Rust toolchain: stable with rustfmt and clippy
+- Task runner: just
+- Test runner: cargo-nextest
+- OpenSpec command runner: pnpm
 - Primary interface: `creditlint`
 
 ## Problem
@@ -98,7 +102,17 @@ messages, pull request text, or policy files to any hosted service.
 
 ## Development
 
-Use pnpm for package management.
+Use Cargo for implementation work. The OpenSpec CLI is currently invoked through
+`pnpm dlx`, but consuming projects should not need Node.js or pnpm to run
+`creditlint`.
+
+Planned Rust tooling:
+
+- `rust-toolchain.toml` pins stable Rust with `rustfmt` and `clippy`.
+- `just` provides short project commands.
+- `cargo-nextest` is the preferred test runner.
+- `cargo-watch` is optional for local edit/test loops.
+- `cross` is reserved for release builds.
 
 OpenSpec commands:
 
