@@ -68,12 +68,15 @@ impl Policy {
             }
 
             if let Some((field, value)) = parse_trailer_line(trimmed) {
+                let mut matched_forbidden_rule = false;
+
                 for rule in self
                     .rules
                     .iter()
                     .filter(|rule| rule.kind == RuleKind::ForbiddenTrailer)
                 {
                     if rule.matches_trailer(field, value)? {
+                        matched_forbidden_rule = true;
                         violations.push(Violation {
                             source: source.clone(),
                             rule_id: rule.id.clone(),
@@ -82,6 +85,10 @@ impl Policy {
                             message: rule.message.clone(),
                         });
                     }
+                }
+
+                if self.is_allowed_provenance_key(field) && !matched_forbidden_rule {
+                    continue;
                 }
             }
 
@@ -103,6 +110,10 @@ impl Policy {
         }
 
         Ok(violations)
+    }
+
+    fn is_allowed_provenance_key(&self, field: &str) -> bool {
+        self.allowed_provenance_keys.iter().any(|key| key == field)
     }
 }
 
@@ -232,7 +243,7 @@ fn matches_pattern(pattern: &str, value: &str, rule_id: &str) -> Result<bool, An
 
 #[cfg(test)]
 mod tests {
-    use super::{Policy, Source, SourceKind};
+    use super::{FieldMatcher, Policy, Rule, RuleKind, Source, SourceKind, ValueMatcher};
 
     fn test_source() -> Source {
         Source {
@@ -310,5 +321,46 @@ mod tests {
         assert_eq!(violations[0].source.kind, SourceKind::MessageFile);
         assert_eq!(violations[0].source.commit_sha.as_deref(), Some("abc123"));
         assert_eq!(violations[0].field.as_deref(), Some("Co-authored-by"));
+    }
+
+    #[test]
+    fn forbidden_rule_wins_over_allowed_provenance_key() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "forbidden-generated-by-codex".to_string(),
+                kind: RuleKind::ForbiddenTrailer,
+                field_matcher: FieldMatcher::Exact("Generated-by".to_string()),
+                value_matcher: ValueMatcher::Pattern("(?i)codex".to_string()),
+                message: "Generated-by Codex is not allowed".to_string(),
+            }],
+            allowed_provenance_keys: vec!["Generated-by".to_string()],
+        };
+
+        let violations = policy
+            .analyze(test_source(), "Generated-by: Codex")
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "forbidden-generated-by-codex");
+    }
+
+    #[test]
+    fn allowed_provenance_key_passes_without_forbidden_match() {
+        let policy = Policy {
+            rules: vec![Rule {
+                id: "forbidden-generated-by-codex".to_string(),
+                kind: RuleKind::ForbiddenTrailer,
+                field_matcher: FieldMatcher::Exact("Generated-by".to_string()),
+                value_matcher: ValueMatcher::Pattern("(?i)codex".to_string()),
+                message: "Generated-by Codex is not allowed".to_string(),
+            }],
+            allowed_provenance_keys: vec!["Generated-by".to_string()],
+        };
+
+        let violations = policy
+            .analyze(test_source(), "Generated-by: internal-build-script")
+            .expect("analysis should succeed");
+
+        assert!(violations.is_empty());
     }
 }
