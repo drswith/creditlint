@@ -1,5 +1,8 @@
 use std::path::PathBuf;
 
+use regex::Regex;
+use thiserror::Error;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Policy {
     pub rules: Vec<Rule>,
@@ -52,6 +55,57 @@ impl Default for Policy {
     }
 }
 
+impl Policy {
+    pub fn analyze(&self, source: Source, message: &str) -> Result<Vec<Violation>, AnalysisError> {
+        let mut violations = Vec::new();
+
+        for (line_index, raw_line) in message.lines().enumerate() {
+            let line_number = line_index + 1;
+            let trimmed = raw_line.trim();
+
+            if trimmed.is_empty() {
+                continue;
+            }
+
+            if let Some((field, value)) = parse_trailer_line(trimmed) {
+                for rule in self
+                    .rules
+                    .iter()
+                    .filter(|rule| rule.kind == RuleKind::ForbiddenTrailer)
+                {
+                    if rule.matches_trailer(field, value)? {
+                        violations.push(Violation {
+                            source: source.clone(),
+                            rule_id: rule.id.clone(),
+                            field: Some(field.to_string()),
+                            line: Some(line_number),
+                            message: rule.message.clone(),
+                        });
+                    }
+                }
+            }
+
+            for rule in self
+                .rules
+                .iter()
+                .filter(|rule| rule.kind == RuleKind::FreeformMarker)
+            {
+                if rule.matches_freeform(trimmed)? {
+                    violations.push(Violation {
+                        source: source.clone(),
+                        rule_id: rule.id.clone(),
+                        field: None,
+                        line: Some(line_number),
+                        message: rule.message.clone(),
+                    });
+                }
+            }
+        }
+
+        Ok(violations)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rule {
     pub id: String,
@@ -59,6 +113,24 @@ pub struct Rule {
     pub field_matcher: FieldMatcher,
     pub value_matcher: ValueMatcher,
     pub message: String,
+}
+
+impl Rule {
+    fn matches_trailer(&self, field: &str, value: &str) -> Result<bool, AnalysisError> {
+        Ok(self.field_matcher.matches(field, &self.id)?
+            && self.value_matcher.matches(value, &self.id)?)
+    }
+
+    fn matches_freeform(&self, line: &str) -> Result<bool, AnalysisError> {
+        match (&self.field_matcher, &self.value_matcher) {
+            (FieldMatcher::Any, matcher) => matcher.matches(line, &self.id),
+            (matcher, ValueMatcher::Any) => matcher.matches(line, &self.id),
+            (field_matcher, value_matcher) => {
+                Ok(field_matcher.matches(line, &self.id)?
+                    && value_matcher.matches(line, &self.id)?)
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -74,11 +146,31 @@ pub enum FieldMatcher {
     Pattern(String),
 }
 
+impl FieldMatcher {
+    fn matches(&self, value: &str, rule_id: &str) -> Result<bool, AnalysisError> {
+        match self {
+            FieldMatcher::Any => Ok(true),
+            FieldMatcher::Exact(expected) => Ok(expected == value),
+            FieldMatcher::Pattern(pattern) => matches_pattern(pattern, value, rule_id),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ValueMatcher {
     Any,
     Exact(String),
     Pattern(String),
+}
+
+impl ValueMatcher {
+    fn matches(&self, value: &str, rule_id: &str) -> Result<bool, AnalysisError> {
+        match self {
+            ValueMatcher::Any => Ok(true),
+            ValueMatcher::Exact(expected) => Ok(expected == value),
+            ValueMatcher::Pattern(pattern) => matches_pattern(pattern, value, rule_id),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,4 +195,37 @@ pub struct Violation {
     pub field: Option<String>,
     pub line: Option<usize>,
     pub message: String,
+}
+
+#[derive(Debug, Error)]
+pub enum AnalysisError {
+    #[error("invalid regex pattern in rule {rule_id}: {pattern}")]
+    InvalidPattern {
+        rule_id: String,
+        pattern: String,
+        #[source]
+        source: regex::Error,
+    },
+}
+
+fn parse_trailer_line(line: &str) -> Option<(&str, &str)> {
+    let (field, value) = line.split_once(':')?;
+    let field = field.trim();
+    let value = value.trim();
+
+    if field.is_empty() || value.is_empty() {
+        return None;
+    }
+
+    Some((field, value))
+}
+
+fn matches_pattern(pattern: &str, value: &str, rule_id: &str) -> Result<bool, AnalysisError> {
+    let regex = Regex::new(pattern).map_err(|source| AnalysisError::InvalidPattern {
+        rule_id: rule_id.to_string(),
+        pattern: pattern.to_string(),
+        source,
+    })?;
+
+    Ok(regex.is_match(value))
 }

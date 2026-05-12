@@ -2,6 +2,7 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use regex::Regex;
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -166,6 +167,9 @@ impl RawForbiddenRule {
             None => ValueMatcher::Any,
         };
 
+        validate_matcher(&field_matcher, index, "field")?;
+        validate_matcher_value(&value_matcher, index, "value")?;
+
         Ok(Rule {
             id: format!("config-forbidden-rule-{index}"),
             kind,
@@ -174,4 +178,36 @@ impl RawForbiddenRule {
             message: "Config-defined credit marker is not allowed".to_string(),
         })
     }
+}
+
+fn validate_matcher(
+    matcher: &FieldMatcher,
+    index: usize,
+    matcher_name: &str,
+) -> Result<(), ConfigError> {
+    match matcher {
+        FieldMatcher::Pattern(pattern) => validate_pattern(pattern, index, matcher_name),
+        FieldMatcher::Any | FieldMatcher::Exact(_) => Ok(()),
+    }
+}
+
+fn validate_matcher_value(
+    matcher: &ValueMatcher,
+    index: usize,
+    matcher_name: &str,
+) -> Result<(), ConfigError> {
+    match matcher {
+        ValueMatcher::Pattern(pattern) => validate_pattern(pattern, index, matcher_name),
+        ValueMatcher::Any | ValueMatcher::Exact(_) => Ok(()),
+    }
+}
+
+fn validate_pattern(pattern: &str, index: usize, matcher_name: &str) -> Result<(), ConfigError> {
+    Regex::new(pattern).map_err(|source| {
+        ConfigError::Validation(format!(
+            "forbidden_trailers[{index}] has invalid {matcher_name}_pattern `{pattern}`: {source}"
+        ))
+    })?;
+
+    Ok(())
 }
