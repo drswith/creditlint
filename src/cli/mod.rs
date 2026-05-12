@@ -6,7 +6,8 @@ use clap::{ArgGroup, Args, Parser, Subcommand};
 use thiserror::Error;
 
 use crate::config::{ConfigError, load_policy_from_current_dir};
-use crate::policy::{AnalysisError, Source, SourceKind, Violation};
+use crate::policy::{AnalysisError, Source, SourceKind};
+use crate::reporter::{OutputFormat, render_violations};
 
 #[derive(Debug, Parser)]
 #[command(name = "creditlint")]
@@ -32,6 +33,8 @@ struct CheckArgs {
     message_file: Option<PathBuf>,
     #[arg(long)]
     stdin: bool,
+    #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
+    format: OutputFormat,
 }
 
 pub fn run() -> Result<(), CliError> {
@@ -44,6 +47,7 @@ pub fn run() -> Result<(), CliError> {
 
 fn run_check(args: CheckArgs) -> Result<(), CliError> {
     let policy = load_policy_from_current_dir().map_err(CliError::Config)?;
+    let format = args.format;
     let (content, source) = match (args.message_file, args.stdin) {
         (Some(path), false) => {
             let content = fs::read_to_string(&path).map_err(|source| CliError::ReadMessage {
@@ -77,26 +81,16 @@ fn run_check(args: CheckArgs) -> Result<(), CliError> {
         .map_err(CliError::AnalyzeMessage)?;
 
     if violations.is_empty() {
+        if format == OutputFormat::Json {
+            let output = render_violations(format, &violations).map_err(CliError::RenderReport)?;
+            println!("{output}");
+        }
         return Ok(());
     }
 
-    print_human_violations(&violations);
+    let output = render_violations(format, &violations).map_err(CliError::RenderReport)?;
+    println!("{output}");
     Err(CliError::PolicyViolation)
-}
-
-fn print_human_violations(violations: &[Violation]) {
-    println!("creditlint found {} violation(s)", violations.len());
-
-    for violation in violations {
-        println!("rule: {}", violation.rule_id);
-        if let Some(field) = &violation.field {
-            println!("field: {field}");
-        }
-        if let Some(line) = violation.line {
-            println!("line: {line}");
-        }
-        println!("message: {}", violation.message);
-    }
 }
 
 #[derive(Debug, Error)]
@@ -117,4 +111,6 @@ pub enum CliError {
     ReadStdin(#[source] std::io::Error),
     #[error("failed to analyze message")]
     AnalyzeMessage(#[source] AnalysisError),
+    #[error("failed to render output")]
+    RenderReport(#[source] serde_json::Error),
 }

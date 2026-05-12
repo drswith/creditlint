@@ -21,7 +21,7 @@
 
 - [x] 3.1 Implement `creditlint check --message-file`.
 - [x] 3.2 Implement `creditlint check --stdin`.
-- [ ] 3.3 Implement human-readable and JSON reporters.
+- [x] 3.3 Implement human-readable and JSON reporters.
 - [ ] 3.4 Implement stable exit codes `0`, `1`, and `2`.
 - [ ] 3.5 Add CLI tests for file input, stdin input, output formats, invalid config, and exit codes.
 

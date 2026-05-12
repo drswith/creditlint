@@ -1,9 +1,10 @@
 use std::path::PathBuf;
 
 use regex::Regex;
+use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Policy {
     pub rules: Vec<Rule>,
     pub allowed_provenance_keys: Vec<String>,
@@ -119,7 +120,7 @@ impl Policy {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Rule {
     pub id: String,
     pub kind: RuleKind,
@@ -146,13 +147,13 @@ impl Rule {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum RuleKind {
     ForbiddenTrailer,
     FreeformMarker,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum FieldMatcher {
     Any,
     Exact(String),
@@ -169,7 +170,7 @@ impl FieldMatcher {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub enum ValueMatcher {
     Any,
     Exact(String),
@@ -186,14 +187,14 @@ impl ValueMatcher {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Source {
     pub kind: SourceKind,
     pub path: Option<PathBuf>,
     pub commit_sha: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub enum SourceKind {
     MessageFile,
     Stdin,
@@ -201,7 +202,7 @@ pub enum SourceKind {
     Audit,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Violation {
     pub source: Source,
     pub rule_id: String,
