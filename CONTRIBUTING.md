@@ -100,3 +100,26 @@ Pull requests should describe:
 
 Do not mark an OpenSpec task complete unless the implementation and tests for
 that task are actually done.
+
+## GitHub Actions Notes
+
+When documenting or updating CI examples:
+
+- Use Cargo or a native binary artifact path. Do not introduce Node-based
+  wrappers as the default integration path.
+- Use full-history checkout for range checks:
+
+```yaml
+- uses: actions/checkout@v4
+  with:
+    fetch-depth: 0
+```
+
+- Keep the range check explicit, for example:
+
+```sh
+./target/release/creditlint check --range origin/${{ github.base_ref }}..HEAD
+```
+
+Shallow fetches can make `check --range` fail because the base commit is not
+available locally.

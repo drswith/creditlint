@@ -71,8 +71,9 @@ rules:
   forbidden_trailers:
     - key: Co-authored-by
       value_pattern: "(?i)(codex|claude|cursor|copilot|openai|anthropic|gemini|ai)"
-    - key_pattern: "(?i)made[- ]?(with|on)"
-    - key_pattern: "(?i)generated[- ]?with"
+    - key_pattern: "(?i)^made[- ]with\\b.*$"
+    - key_pattern: "(?i)^made[- ]on\\b.*$"
+    - key_pattern: "(?i)^generated[- ]with\\b.*$"
 
   allowed_provenance_trailers:
     - AI-Assisted
@@ -94,6 +95,51 @@ rules:
 
 CI range checks are useful, but they do not by themselves guarantee validation
 of a final squash merge message edited by the hosting platform UI.
+
+## GitHub Actions
+
+For repository-local CI, use the Rust toolchain and the checked-out source
+tree until published binaries are available.
+
+`fetch-depth: 0` is required for `check --range` because shallow history can
+remove the base commits needed to resolve the range.
+
+```yaml
+name: creditlint
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  creditlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build creditlint
+        run: cargo build --release
+
+      - name: Check pull request commit messages
+        if: github.event_name == 'pull_request'
+        run: |
+          ./target/release/creditlint check \
+            --range origin/${{ github.base_ref }}..HEAD
+
+      - name: Audit full history on main
+        if: github.event_name == 'push'
+        run: ./target/release/creditlint audit --all
+```
+
+Once native release artifacts exist, the build step can be replaced with a
+binary download or package install. The fetch-depth requirement remains the
+same for range checks.
 
 ## Privacy
 
