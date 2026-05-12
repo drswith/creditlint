@@ -12,14 +12,25 @@ pub struct CommitMessage {
 }
 
 pub fn collect_range_messages(range: &str) -> Result<Vec<CommitMessage>, GitError> {
+    collect_git_messages(["log", "--format=%H%x1f%B%x1e", range], range)
+}
+
+pub fn collect_all_messages() -> Result<Vec<CommitMessage>, GitError> {
+    collect_git_messages(["log", "--format=%H%x1f%B%x1e", "--all"], "--all")
+}
+
+fn collect_git_messages<const N: usize>(
+    args: [&str; N],
+    scope: &str,
+) -> Result<Vec<CommitMessage>, GitError> {
     let output = Command::new("git")
-        .args(["log", "--format=%H%x1f%B%x1e", range])
+        .args(args)
         .output()
         .map_err(GitError::Spawn)?;
 
     if !output.status.success() {
         return Err(GitError::CommandFailed {
-            range: range.to_string(),
+            range: scope.to_string(),
             stderr: String::from_utf8_lossy(&output.stderr).trim().to_string(),
         });
     }

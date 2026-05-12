@@ -6,7 +6,7 @@ use clap::{ArgGroup, Args, Parser, Subcommand};
 use thiserror::Error;
 
 use crate::config::{ConfigError, load_policy_from_current_dir};
-use crate::git::{GitError, collect_range_messages};
+use crate::git::{GitError, collect_all_messages, collect_range_messages};
 use crate::policy::{AnalysisError, Source, SourceKind};
 use crate::reporter::{OutputFormat, render_violations};
 
@@ -21,6 +21,7 @@ pub struct Cli {
 #[derive(Debug, Subcommand)]
 enum Commands {
     Check(CheckArgs),
+    Audit(AuditArgs),
 }
 
 #[derive(Debug, Args)]
@@ -40,11 +41,20 @@ struct CheckArgs {
     format: OutputFormat,
 }
 
+#[derive(Debug, Args)]
+struct AuditArgs {
+    #[arg(long)]
+    all: bool,
+    #[arg(long, value_enum, default_value_t = OutputFormat::Human)]
+    format: OutputFormat,
+}
+
 pub fn run() -> Result<(), CliError> {
     let cli = Cli::parse();
 
     match cli.command {
         Commands::Check(args) => run_check(args),
+        Commands::Audit(args) => run_audit(args),
     }
 }
 
@@ -108,6 +118,43 @@ fn run_check(args: CheckArgs) -> Result<(), CliError> {
     }
 
     let output = render_violations(format, &violations).map_err(CliError::RenderReport)?;
+    println!("{output}");
+    Err(CliError::PolicyViolation)
+}
+
+fn run_audit(args: AuditArgs) -> Result<(), CliError> {
+    if !args.all {
+        return Err(CliError::InvalidInputSelection);
+    }
+
+    let policy = load_policy_from_current_dir().map_err(CliError::Config)?;
+    let violations = collect_all_messages()
+        .map_err(CliError::Git)?
+        .into_iter()
+        .map(|commit| {
+            let source = Source {
+                kind: SourceKind::Audit,
+                path: None,
+                commit_sha: Some(commit.sha),
+            };
+            policy.analyze(source, &commit.message)
+        })
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(CliError::AnalyzeMessage)?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+    if violations.is_empty() {
+        if args.format == OutputFormat::Json {
+            let output =
+                render_violations(args.format, &violations).map_err(CliError::RenderReport)?;
+            println!("{output}");
+        }
+        return Ok(());
+    }
+
+    let output = render_violations(args.format, &violations).map_err(CliError::RenderReport)?;
     println!("{output}");
     Err(CliError::PolicyViolation)
 }
