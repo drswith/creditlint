@@ -6,6 +6,52 @@ pub struct Policy {
     pub allowed_provenance_keys: Vec<String>,
 }
 
+impl Default for Policy {
+    fn default() -> Self {
+        Self {
+            rules: vec![
+                Rule {
+                    id: "forbidden-ai-coauthor".to_string(),
+                    kind: RuleKind::ForbiddenTrailer,
+                    field_matcher: FieldMatcher::Exact("Co-authored-by".to_string()),
+                    value_matcher: ValueMatcher::Pattern(
+                        "(?i)(codex|claude|cursor|copilot|openai|anthropic|gemini|ai)".to_string(),
+                    ),
+                    message: "AI/tool authorship marker is not allowed".to_string(),
+                },
+                Rule {
+                    id: "forbidden-made-with-marker".to_string(),
+                    kind: RuleKind::FreeformMarker,
+                    field_matcher: FieldMatcher::Any,
+                    value_matcher: ValueMatcher::Pattern("(?i)^made[- ]with\\b.*$".to_string()),
+                    message: "Made-with credit marker is not allowed".to_string(),
+                },
+                Rule {
+                    id: "forbidden-made-on-marker".to_string(),
+                    kind: RuleKind::FreeformMarker,
+                    field_matcher: FieldMatcher::Any,
+                    value_matcher: ValueMatcher::Pattern("(?i)^made[- ]on\\b.*$".to_string()),
+                    message: "Made-on credit marker is not allowed".to_string(),
+                },
+                Rule {
+                    id: "forbidden-generated-with-marker".to_string(),
+                    kind: RuleKind::FreeformMarker,
+                    field_matcher: FieldMatcher::Any,
+                    value_matcher: ValueMatcher::Pattern(
+                        "(?i)^generated[- ]with\\b.*$".to_string(),
+                    ),
+                    message: "Generated-with credit marker is not allowed".to_string(),
+                },
+            ],
+            allowed_provenance_keys: vec![
+                "AI-Assisted".to_string(),
+                "Tool-Used".to_string(),
+                "Generated-by".to_string(),
+            ],
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rule {
     pub id: String,
