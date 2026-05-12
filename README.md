@@ -194,6 +194,29 @@ payload and passed through the same file-based check. `check --range` and
 the temporary file path validates PR text that may later influence squash merge
 message generation.
 
+## GitHub Squash Merge Rulesets
+
+If GitHub squash merge remains enabled, use repository ruleset metadata
+restrictions to validate the final squash commit message that GitHub is about to
+write.
+
+Export a conservative ruleset regex from the active policy:
+
+```sh
+creditlint github ruleset-pattern
+```
+
+In GitHub branch or repository rulesets, use the exported pattern with a
+commit-message restriction equivalent to:
+
+- commit message must not match regex
+
+This ruleset path is stronger than CI for the final squash commit because
+GitHub evaluates the generated merge message at the protected-branch boundary.
+
+`creditlint check --range` is still useful for pull request commit messages, but
+it does not by itself validate a final squash message edited in the GitHub UI.
+
 ## Privacy
 
 The planned CLI is local-first. By default, `creditlint` should not upload commit

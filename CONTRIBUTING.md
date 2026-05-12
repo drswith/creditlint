@@ -172,3 +172,15 @@ Keep the default privacy boundary explicit in docs and reviews:
 
 Do not casually add telemetry, background syncing, or remote policy lookups
 without a separate OpenSpec change.
+
+## GitHub Ruleset Notes
+
+When documenting GitHub squash-merge protection, distinguish these layers:
+
+- `creditlint check --range` validates pull request commit messages.
+- `creditlint github ruleset-pattern` exports a conservative regex for GitHub
+  commit-message metadata restrictions.
+- The GitHub ruleset is the platform-side control for the final squash message.
+
+Do not describe a pull request range check as if it guarantees the final squash
+commit message produced or edited in the GitHub UI.
