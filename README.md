@@ -217,6 +217,23 @@ GitHub evaluates the generated merge message at the protected-branch boundary.
 `creditlint check --range` is still useful for pull request commit messages, but
 it does not by itself validate a final squash message edited in the GitHub UI.
 
+## Merge Bot Validation
+
+For repositories that use a controlled merge bot, validate the final merge
+message immediately before the bot performs the protected-branch write:
+
+```sh
+creditlint check --message-file final-merge-message.txt
+```
+
+This path is appropriate when:
+
+- the active policy cannot be represented safely as one GitHub ruleset regex
+- the repository wants one final validation step after PR checks
+- the merge system already materializes the exact final commit message
+
+The merge bot should fail closed when `creditlint` exits with `1` or `2`.
+
 ## Privacy
 
 The planned CLI is local-first. By default, `creditlint` should not upload commit

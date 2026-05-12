@@ -184,3 +184,15 @@ When documenting GitHub squash-merge protection, distinguish these layers:
 
 Do not describe a pull request range check as if it guarantees the final squash
 commit message produced or edited in the GitHub UI.
+
+## Merge Bot Notes
+
+When a repository uses a controlled merge bot, document final-message
+validation explicitly:
+
+```sh
+creditlint check --message-file final-merge-message.txt
+```
+
+The merge bot should run this against the exact message it is about to write,
+then fail closed on exit code `1` or `2`.
