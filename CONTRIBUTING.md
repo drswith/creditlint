@@ -127,6 +127,17 @@ When documenting or updating CI examples:
 Shallow fetches can make `check --range` fail because the base commit is not
 available locally.
 
+## Delivery Notes
+
+The repository is now in delivery preparation, not just bootstrap development.
+
+Delivery expectations:
+
+- CI validates source builds, tests, and release-binary smoke execution.
+- The release workflow builds native artifacts for Linux, macOS, and Windows.
+- Tagged releases should publish those binaries as GitHub Release assets.
+- Users should not need a Rust toolchain when consuming prebuilt binaries.
+
 ## Local Hook Notes
 
 Prefer the managed hook path for local testing:

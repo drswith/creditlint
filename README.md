@@ -9,7 +9,8 @@ trailers or merge messages.
 
 ## Status
 
-This repository is in the OpenSpec planning and bootstrap phase.
+This repository has moved from bootstrap implementation into delivery
+preparation.
 
 Active change:
 
@@ -24,6 +25,7 @@ Current implementation target:
 - Test runner: cargo-nextest
 - OpenSpec command runner: pnpm
 - Primary interface: `creditlint`
+- Delivery path: GitHub Actions release artifacts and GitHub Releases
 
 ## Problem
 
@@ -44,7 +46,7 @@ they are added without explicit maintainer approval.
 - Provenance markers such as `AI-Assisted` or `Tool-Used` can disclose process
   without implying authorship.
 
-## Planned CLI
+## CLI
 
 ```sh
 creditlint check --message-file .git/COMMIT_EDITMSG
@@ -56,13 +58,13 @@ creditlint install-hook
 creditlint github ruleset-pattern
 ```
 
-Planned exit codes:
+Exit codes:
 
 - `0`: no violations
 - `1`: policy violations found
 - `2`: invalid invocation, invalid config, or missing required metadata
 
-## Planned Policy File
+## Policy File
 
 ```yaml
 version: 1
@@ -98,8 +100,8 @@ of a final squash merge message edited by the hosting platform UI.
 
 ## GitHub Actions
 
-For repository-local CI, use the Rust toolchain and the checked-out source
-tree until published binaries are available.
+For repository-local CI, the checked-in workflow builds and validates the Rust
+source tree directly.
 
 `fetch-depth: 0` is required for `check --range` because shallow history can
 remove the base commits needed to resolve the range.
@@ -137,9 +139,9 @@ jobs:
         run: ./target/release/creditlint audit --all
 ```
 
-Once native release artifacts exist, the build step can be replaced with a
-binary download or package install. The fetch-depth requirement remains the
-same for range checks.
+The release workflow produces native binaries for Linux, macOS, and Windows as
+workflow artifacts on manual runs and as GitHub Release assets for version tags.
+The fetch-depth requirement remains the same for range checks.
 
 ## Local Hooks
 
@@ -356,10 +358,11 @@ openspec/changes/bootstrap-creditlint-mvp/tasks.md
 
 ## Packaging
 
-The package metadata is prepared for native Rust distribution through:
+`creditlint` now uses a delivery-oriented native packaging path through:
 
 - crates.io for the `creditlint` crate
-- GitHub Releases for prebuilt binaries and release notes
+- GitHub Actions workflow artifacts for manual release runs
+- GitHub Releases for tagged prebuilt binaries and release notes
 
 The published metadata points back to this repository and the future `docs.rs`
 documentation page for the crate.
@@ -371,6 +374,9 @@ For cross-platform release artifacts, use `cross` through the checked-in
 just cross-build x86_64-unknown-linux-gnu
 just cross-build x86_64-pc-windows-msvc
 ```
+
+For consumers who do not want a Rust toolchain, prefer downloading the matching
+native binary artifact from GitHub Releases.
 
 ## Versioning
 

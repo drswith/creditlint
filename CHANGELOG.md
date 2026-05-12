@@ -14,6 +14,8 @@ semantic versioning after the first release.
 - Added Rust CLI commands for message checks, Git range audits, config init,
   managed hook installation, and conservative GitHub ruleset export.
 - Added CI workflow scaffolding and release metadata for native packaging.
+- Added release-binary smoke coverage and a delivery workflow for native
+  release artifacts.
 
 ## Versioning Guidance
 
