@@ -146,3 +146,18 @@ integration by adding this command to the existing hook:
 ```sh
 creditlint check --message-file "$1"
 ```
+
+## Pull Request Text Notes
+
+Document pull request title/body validation as a separate check surface from
+commit ranges.
+
+Recommended pattern:
+
+```sh
+printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > /tmp/creditlint-pr-message.txt
+creditlint check --message-file /tmp/creditlint-pr-message.txt
+```
+
+This is especially important for squash-merge workflows where platform-generated
+final commit messages can inherit pull request text.

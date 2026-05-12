@@ -174,6 +174,26 @@ creditlint check --message-file "$1"
 If your team uses the Python `pre-commit` framework, run the same command from a
 local hook entry and pass the commit message file path through the hook config.
 
+## Pull Request Title And Body Checks
+
+Pull request text is a separate input surface from commit messages. This matters
+most when a hosting platform uses the pull request title or body while building
+a final squash merge commit message.
+
+In CI, write the pull request title and body into a temporary file and lint that
+file with the same policy engine:
+
+```sh
+printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > /tmp/creditlint-pr-message.txt
+creditlint check --message-file /tmp/creditlint-pr-message.txt
+```
+
+For GitHub Actions, the title and body can be read from the pull request event
+payload and passed through the same file-based check. `check --range` and
+`check --message-file` are complementary; range checks validate commits, while
+the temporary file path validates PR text that may later influence squash merge
+message generation.
+
 ## Privacy
 
 The planned CLI is local-first. By default, `creditlint` should not upload commit
