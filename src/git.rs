@@ -1,4 +1,5 @@
 use std::io::{BufRead, BufReader, Read};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 use thiserror::Error;
@@ -18,6 +19,26 @@ pub fn collect_range_messages(range: &str) -> Result<Vec<CommitMessage>, GitErro
 
 pub fn collect_all_messages() -> Result<Vec<CommitMessage>, GitError> {
     collect_git_messages(["log", "--format=%H%x1f%B%x1e", "--all"], "--all")
+}
+
+pub fn commit_msg_hook_path() -> Result<PathBuf, GitError> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--git-path", "hooks/commit-msg"])
+        .output()
+        .map_err(GitError::Spawn)?;
+
+    if !output.status.success() {
+        return Err(GitError::CommandFailed {
+            range: "hooks/commit-msg".to_string(),
+            stderr: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        });
+    }
+
+    Ok(PathBuf::from(
+        String::from_utf8(output.stdout)
+            .map_err(GitError::InvalidUtf8)?
+            .trim(),
+    ))
 }
 
 fn collect_git_messages<const N: usize>(

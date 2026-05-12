@@ -36,7 +36,7 @@
 ## 5. Workflow Integrations
 
 - [x] 5.1 Implement `creditlint init` that writes `.creditlint.yml` without overwriting existing config.
-- [ ] 5.2 Implement `creditlint install-hook` with stable managed-hook markers and safe handling for existing unmanaged `commit-msg` hooks.
+- [x] 5.2 Implement `creditlint install-hook` with stable managed-hook markers and safe handling for existing unmanaged `commit-msg` hooks.
 - [ ] 5.3 Add GitHub Actions documentation using the native binary or Cargo and full-history checkout for range checks.
 - [ ] 5.4 Add local Git hook and pre-commit documentation.
 - [ ] 5.5 Document pull request title/body validation by writing PR text to a file and using `check --message-file`.

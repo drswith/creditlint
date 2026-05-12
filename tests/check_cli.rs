@@ -1,4 +1,6 @@
 use std::fs;
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::process::{Command as ProcessCommand, Stdio};
 
 use assert_cmd::Command;
@@ -88,6 +90,83 @@ fn check_message_file_reports_violation_with_exit_code_one() {
         String::from_utf8_lossy(&output.stdout).contains("forbidden-ai-coauthor"),
         "stdout should contain the rule id"
     );
+}
+
+#[test]
+fn install_hook_creates_managed_commit_msg_hook() {
+    let repo = init_git_repo();
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(0));
+
+    let hook_path = repo.path().join(".git/hooks/commit-msg");
+    let hook = fs::read_to_string(&hook_path).expect("hook file");
+    assert!(hook.contains("creditlint managed hook"));
+    assert!(hook.contains("version: 1"));
+    assert!(hook.contains("creditlint check --message-file \"$1\""));
+
+    #[cfg(unix)]
+    assert_eq!(
+        fs::metadata(&hook_path)
+            .expect("metadata")
+            .permissions()
+            .mode()
+            & 0o777,
+        0o755
+    );
+}
+
+#[test]
+fn install_hook_refuses_to_overwrite_unmanaged_hook() {
+    let repo = init_git_repo();
+    let hook_path = repo.path().join(".git/hooks/commit-msg");
+    fs::write(&hook_path, "#!/bin/sh\necho custom hook\n").expect("hook");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&output.stderr).contains("existing unmanaged commit-msg hook"),
+        "stderr should explain the unmanaged hook"
+    );
+    assert_eq!(
+        fs::read_to_string(&hook_path).expect("hook file"),
+        "#!/bin/sh\necho custom hook\n"
+    );
+}
+
+#[test]
+fn install_hook_replaces_existing_managed_hook() {
+    let repo = init_git_repo();
+    let hook_path = repo.path().join(".git/hooks/commit-msg");
+    fs::write(
+        &hook_path,
+        "#!/bin/sh\n# creditlint managed hook\n# version: 1\n\necho old hook\n",
+    )
+    .expect("hook");
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .arg("install-hook")
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(0));
+    let hook = fs::read_to_string(&hook_path).expect("hook file");
+    assert!(hook.contains("creditlint check --message-file \"$1\""));
+    assert!(!hook.contains("echo old hook"));
 }
 
 #[test]

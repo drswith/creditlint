@@ -1,5 +1,7 @@
 use std::fs;
 use std::io::{self, Read};
+#[cfg(unix)]
+use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
 use clap::{ArgGroup, Args, Parser, Subcommand};
@@ -9,7 +11,7 @@ use crate::config::{
     ConfigError, default_config_contents, init_config_path_from_current_dir,
     load_policy_from_current_dir,
 };
-use crate::git::{GitError, collect_all_messages, collect_range_messages};
+use crate::git::{GitError, collect_all_messages, collect_range_messages, commit_msg_hook_path};
 use crate::policy::{AnalysisError, Source, SourceKind};
 use crate::reporter::{OutputFormat, render_violations};
 
@@ -26,6 +28,7 @@ enum Commands {
     Check(CheckArgs),
     Audit(AuditArgs),
     Init,
+    InstallHook,
 }
 
 #[derive(Debug, Args)]
@@ -60,8 +63,18 @@ pub fn run() -> Result<(), CliError> {
         Commands::Check(args) => run_check(args),
         Commands::Audit(args) => run_audit(args),
         Commands::Init => run_init(),
+        Commands::InstallHook => run_install_hook(),
     }
 }
+
+const MANAGED_HOOK_MARKER: &str = "creditlint managed hook";
+const MANAGED_HOOK_VERSION: &str = "version: 1";
+const COMMIT_MSG_HOOK_CONTENTS: &str = r#"#!/bin/sh
+# creditlint managed hook
+# version: 1
+
+creditlint check --message-file "$1"
+"#;
 
 fn run_init() -> Result<(), CliError> {
     let path = init_config_path_from_current_dir().map_err(CliError::Config)?;
@@ -76,6 +89,56 @@ fn run_init() -> Result<(), CliError> {
     })?;
 
     println!("created {}", path.display());
+    Ok(())
+}
+
+fn run_install_hook() -> Result<(), CliError> {
+    let path = commit_msg_hook_path().map_err(CliError::Git)?;
+
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|source| CliError::WriteHook {
+            path: parent.to_path_buf(),
+            source,
+        })?;
+    }
+
+    if path.exists() {
+        let existing = fs::read_to_string(&path).map_err(|source| CliError::ReadHook {
+            path: path.clone(),
+            source,
+        })?;
+
+        if !is_managed_hook(&existing) {
+            return Err(CliError::UnmanagedHookExists { path });
+        }
+    }
+
+    fs::write(&path, COMMIT_MSG_HOOK_CONTENTS).map_err(|source| CliError::WriteHook {
+        path: path.clone(),
+        source,
+    })?;
+    set_hook_permissions(&path).map_err(|source| CliError::WriteHook {
+        path: path.clone(),
+        source,
+    })?;
+
+    println!("installed {}", path.display());
+    Ok(())
+}
+
+fn is_managed_hook(contents: &str) -> bool {
+    contents.contains(MANAGED_HOOK_MARKER) && contents.contains(MANAGED_HOOK_VERSION)
+}
+
+#[cfg(unix)]
+fn set_hook_permissions(path: &PathBuf) -> Result<(), std::io::Error> {
+    let mut permissions = fs::metadata(path)?.permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(path, permissions)
+}
+
+#[cfg(not(unix))]
+fn set_hook_permissions(_path: &PathBuf) -> Result<(), std::io::Error> {
     Ok(())
 }
 
@@ -210,6 +273,22 @@ pub enum CliError {
         #[source]
         source: std::io::Error,
     },
+    #[error("failed to read existing hook at {path}")]
+    ReadHook {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
+    #[error(
+        "existing unmanaged commit-msg hook found at {path}; integrate creditlint manually or remove it first"
+    )]
+    UnmanagedHookExists { path: PathBuf },
+    #[error("failed to install commit-msg hook at {path}")]
+    WriteHook {
+        path: PathBuf,
+        #[source]
+        source: std::io::Error,
+    },
 }
 
 impl CliError {
@@ -224,7 +303,10 @@ impl CliError {
             | CliError::Git(_)
             | CliError::RenderReport(_)
             | CliError::ConfigAlreadyExists { .. }
-            | CliError::WriteConfig { .. } => 2,
+            | CliError::WriteConfig { .. }
+            | CliError::ReadHook { .. }
+            | CliError::UnmanagedHookExists { .. }
+            | CliError::WriteHook { .. } => 2,
         }
     }
 }
