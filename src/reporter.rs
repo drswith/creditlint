@@ -32,6 +32,9 @@ fn render_human(violations: &[Violation]) -> String {
 
     for violation in violations {
         lines.push(format!("rule: {}", violation.rule_id));
+        if let Some(commit_sha) = &violation.source.commit_sha {
+            lines.push(format!("commit: {commit_sha}"));
+        }
         if let Some(field) = &violation.field {
             lines.push(format!("field: {field}"));
         }
@@ -57,4 +60,33 @@ fn render_json(violations: &[Violation]) -> Result<String, serde_json::Error> {
 struct ViolationReport<'a> {
     ok: bool,
     violations: &'a [Violation],
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::{OutputFormat, render_violations};
+    use crate::policy::{Source, SourceKind, Violation};
+
+    #[test]
+    fn human_output_includes_commit_sha_when_present() {
+        let report = render_violations(
+            OutputFormat::Human,
+            &[Violation {
+                source: Source {
+                    kind: SourceKind::Commit,
+                    path: Some(PathBuf::from(".git/COMMIT_EDITMSG")),
+                    commit_sha: Some("abc123".to_string()),
+                },
+                rule_id: "forbidden-ai-coauthor".to_string(),
+                field: Some("Co-authored-by".to_string()),
+                line: Some(2),
+                message: "AI/tool authorship marker is not allowed".to_string(),
+            }],
+        )
+        .expect("render report");
+
+        assert!(report.contains("commit: abc123"));
+    }
 }
