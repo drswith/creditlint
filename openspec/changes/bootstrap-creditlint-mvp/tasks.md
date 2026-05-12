@@ -16,6 +16,7 @@
 - [x] 2.6 Implement and test forbidden-before-allowed rule precedence.
 - [x] 2.7 Implement and test conservative free-form marker matching that avoids normal prose.
 - [x] 2.8 Document explicit threat model, bypass assumptions, and Unicode homoglyph out-of-scope behavior.
+- [x] 2.9 Implement and test Git author/committer identity policy rules.
 
 ## 3. CLI Check Commands
 
@@ -27,11 +28,12 @@
 
 ## 4. Git Integration
 
-- [x] 4.1 Implement deterministic Git commit-message collection for `check --range`.
+- [x] 4.1 Implement deterministic Git commit metadata and message collection for `check --range`.
 - [x] 4.2 Include commit SHAs in violations from Git range checks.
-- [x] 4.3 Implement `audit --all` for all reachable commit messages.
+- [x] 4.3 Implement `audit --all` for all reachable commit metadata and messages.
 - [x] 4.4 Add temporary-repository integration tests for clean ranges, violating ranges, invalid ranges, and audit mode.
 - [x] 4.5 Add an audit performance budget and verify commit metadata is processed incrementally.
+- [x] 4.6 Extend Git range/audit collection to include author and committer identity metadata.
 
 ## 5. Workflow Integrations
 

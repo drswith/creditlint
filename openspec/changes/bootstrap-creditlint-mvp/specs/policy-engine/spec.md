@@ -26,6 +26,24 @@ configuration file is present.
 - **WHEN** a message contains `AI-Assisted: true`
 - **THEN** the system SHALL not report a violation from the default policy
 
+#### Scenario: Reject AI tool Git author identity
+
+- **WHEN** Git metadata identifies the author as
+  `Cursor Agent <cursoragent@cursor.com>`
+- **THEN** the system SHALL report a violation for an unauthorized Git author
+  identity
+
+#### Scenario: Reject AI tool Git committer identity
+
+- **WHEN** Git metadata identifies the committer with an AI/tool identity
+- **THEN** the system SHALL report a violation for an unauthorized Git committer
+  identity
+
+#### Scenario: Allow human Git author identity by default
+
+- **WHEN** Git metadata identifies the author as `Jane Doe <jane@example.com>`
+- **THEN** the system SHALL not report a violation from the default policy
+
 ### Requirement: Configurable Policy
 
 The system SHALL load policy configuration from `.creditlint.yml` when present.
@@ -54,10 +72,17 @@ The system SHALL load policy configuration from `.creditlint.yml` when present.
 - **WHEN** `.creditlint.yml` defines a custom forbidden trailer rule
 - **THEN** the system SHALL evaluate messages against that custom rule
 
+#### Scenario: Custom forbidden identity applies
+
+- **WHEN** `.creditlint.yml` defines a custom forbidden identity rule
+- **THEN** the system SHALL evaluate Git author and committer metadata against
+  that custom rule
+
 #### Scenario: Missing config uses defaults
 
 - **WHEN** no `.creditlint.yml` file exists
-- **THEN** the system SHALL evaluate messages with the built-in default policy
+- **THEN** the system SHALL evaluate messages and Git identity metadata with the
+  built-in default policy
 
 ### Requirement: Rule Precedence
 
@@ -123,3 +148,9 @@ formatting them for the terminal.
 
 - **WHEN** a violation comes from a Git commit range
 - **THEN** the violation SHALL include the commit SHA
+
+#### Scenario: Identity field is preserved
+
+- **WHEN** a violation comes from Git author or committer metadata
+- **THEN** the violation SHALL include the matching field such as `author.name`,
+  `author.email`, `committer.name`, or `committer.email`

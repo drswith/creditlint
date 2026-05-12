@@ -7,6 +7,7 @@ use thiserror::Error;
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Policy {
     pub rules: Vec<Rule>,
+    pub identity_rules: Vec<IdentityRule>,
     pub allowed_provenance_keys: Vec<String>,
 }
 
@@ -47,6 +48,18 @@ impl Default for Policy {
                     message: "Generated-with credit marker is not allowed".to_string(),
                 },
             ],
+            identity_rules: vec![IdentityRule {
+                id: "forbidden-ai-git-identity".to_string(),
+                role_matcher: IdentityRoleMatcher::Any,
+                name_pattern: Some(
+                    "(?i)(cursor agent|codex|claude|copilot|openai|anthropic|gemini)".to_string(),
+                ),
+                email_pattern: Some(
+                    "(?i)(cursoragent@cursor\\.com|codex|claude|copilot|openai|anthropic|gemini)"
+                        .to_string(),
+                ),
+                message: "AI/tool Git author or committer identity is not allowed".to_string(),
+            }],
             allowed_provenance_keys: vec![
                 "AI-Assisted".to_string(),
                 "Tool-Used".to_string(),
@@ -115,6 +128,28 @@ impl Policy {
         Ok(violations)
     }
 
+    pub fn analyze_identity(
+        &self,
+        source: Source,
+        identity: &Identity,
+    ) -> Result<Vec<Violation>, AnalysisError> {
+        let mut violations = Vec::new();
+
+        for rule in &self.identity_rules {
+            if let Some(field) = rule.matches_identity(identity)? {
+                violations.push(Violation {
+                    source: source.clone(),
+                    rule_id: rule.id.clone(),
+                    field: Some(field),
+                    line: None,
+                    message: rule.message.clone(),
+                });
+            }
+        }
+
+        Ok(violations)
+    }
+
     fn is_allowed_provenance_key(&self, field: &str) -> bool {
         self.allowed_provenance_keys.iter().any(|key| key == field)
     }
@@ -143,6 +178,76 @@ impl Rule {
                 Ok(field_matcher.matches(line, &self.id)?
                     && value_matcher.matches(line, &self.id)?)
             }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct IdentityRule {
+    pub id: String,
+    pub role_matcher: IdentityRoleMatcher,
+    pub name_pattern: Option<String>,
+    pub email_pattern: Option<String>,
+    pub message: String,
+}
+
+impl IdentityRule {
+    fn matches_identity(&self, identity: &Identity) -> Result<Option<String>, AnalysisError> {
+        if !self.role_matcher.matches(identity.role) {
+            return Ok(None);
+        }
+
+        let role = identity.role.field_prefix();
+
+        if let Some(pattern) = &self.name_pattern
+            && matches_pattern(pattern, &identity.name, &self.id)?
+        {
+            return Ok(Some(format!("{role}.name")));
+        }
+
+        if let Some(pattern) = &self.email_pattern
+            && matches_pattern(pattern, &identity.email, &self.id)?
+        {
+            return Ok(Some(format!("{role}.email")));
+        }
+
+        Ok(None)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum IdentityRoleMatcher {
+    Any,
+    Role(IdentityRole),
+}
+
+impl IdentityRoleMatcher {
+    fn matches(self, role: IdentityRole) -> bool {
+        match self {
+            IdentityRoleMatcher::Any => true,
+            IdentityRoleMatcher::Role(expected) => expected == role,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Identity {
+    pub role: IdentityRole,
+    pub name: String,
+    pub email: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+pub enum IdentityRole {
+    Author,
+    Committer,
+}
+
+impl IdentityRole {
+    fn field_prefix(self) -> &'static str {
+        match self {
+            IdentityRole::Author => "author",
+            IdentityRole::Committer => "committer",
         }
     }
 }
@@ -246,7 +351,10 @@ fn matches_pattern(pattern: &str, value: &str, rule_id: &str) -> Result<bool, An
 
 #[cfg(test)]
 mod tests {
-    use super::{FieldMatcher, Policy, Rule, RuleKind, Source, SourceKind, ValueMatcher};
+    use super::{
+        FieldMatcher, Identity, IdentityRole, IdentityRoleMatcher, IdentityRule, Policy, Rule,
+        RuleKind, Source, SourceKind, ValueMatcher,
+    };
 
     fn test_source() -> Source {
         Source {
@@ -336,6 +444,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("(?i)codex".to_string()),
                 message: "Generated-by Codex is not allowed".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec!["Generated-by".to_string()],
         };
 
@@ -357,6 +466,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("(?i)codex".to_string()),
                 message: "Generated-by Codex is not allowed".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec!["Generated-by".to_string()],
         };
 
@@ -365,5 +475,98 @@ mod tests {
             .expect("analysis should succeed");
 
         assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn default_policy_rejects_cursor_agent_author_identity() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze_identity(
+                test_source(),
+                &Identity {
+                    role: IdentityRole::Author,
+                    name: "Cursor Agent".to_string(),
+                    email: "cursoragent@cursor.com".to_string(),
+                },
+            )
+            .expect("identity analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "forbidden-ai-git-identity");
+        assert_eq!(violations[0].field.as_deref(), Some("author.name"));
+    }
+
+    #[test]
+    fn default_policy_rejects_ai_committer_identity() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze_identity(
+                test_source(),
+                &Identity {
+                    role: IdentityRole::Committer,
+                    name: "Release Bot".to_string(),
+                    email: "codex@example.com".to_string(),
+                },
+            )
+            .expect("identity analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].field.as_deref(), Some("committer.email"));
+    }
+
+    #[test]
+    fn default_policy_allows_human_author_identity() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze_identity(
+                test_source(),
+                &Identity {
+                    role: IdentityRole::Author,
+                    name: "Jane Doe".to_string(),
+                    email: "jane@example.com".to_string(),
+                },
+            )
+            .expect("identity analysis should succeed");
+
+        assert!(violations.is_empty());
+    }
+
+    #[test]
+    fn identity_rule_can_target_only_author_role() {
+        let policy = Policy {
+            rules: vec![],
+            identity_rules: vec![IdentityRule {
+                id: "forbidden-author-agent".to_string(),
+                role_matcher: IdentityRoleMatcher::Role(IdentityRole::Author),
+                name_pattern: Some("(?i)agent".to_string()),
+                email_pattern: None,
+                message: "author agent is not allowed".to_string(),
+            }],
+            allowed_provenance_keys: vec![],
+        };
+
+        let committer_violations = policy
+            .analyze_identity(
+                test_source(),
+                &Identity {
+                    role: IdentityRole::Committer,
+                    name: "Agent Smith".to_string(),
+                    email: "agent@example.com".to_string(),
+                },
+            )
+            .expect("identity analysis should succeed");
+        let author_violations = policy
+            .analyze_identity(
+                test_source(),
+                &Identity {
+                    role: IdentityRole::Author,
+                    name: "Agent Smith".to_string(),
+                    email: "agent@example.com".to_string(),
+                },
+            )
+            .expect("identity analysis should succeed");
+
+        assert!(committer_violations.is_empty());
+        assert_eq!(author_violations.len(), 1);
     }
 }

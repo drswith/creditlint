@@ -11,9 +11,11 @@ use crate::config::{
     ConfigError, default_config_contents, init_config_path_from_current_dir,
     load_policy_from_current_dir,
 };
-use crate::git::{GitError, collect_all_messages, collect_range_messages, commit_msg_hook_path};
+use crate::git::{
+    CommitRecord, GitError, collect_all_messages, collect_range_messages, commit_msg_hook_path,
+};
 use crate::github::{RulesetExportError, export_ruleset_pattern};
-use crate::policy::{AnalysisError, Source, SourceKind};
+use crate::policy::{AnalysisError, Identity, IdentityRole, Policy, Source, SourceKind, Violation};
 use crate::reporter::{OutputFormat, render_violations};
 
 #[derive(Debug, Parser)]
@@ -204,14 +206,7 @@ fn run_check(args: CheckArgs) -> Result<(), CliError> {
         (None, false, Some(range)) => collect_range_messages(&range)
             .map_err(CliError::Git)?
             .into_iter()
-            .map(|commit| {
-                let source = Source {
-                    kind: SourceKind::Commit,
-                    path: None,
-                    commit_sha: Some(commit.sha),
-                };
-                policy.analyze(source, &commit.message)
-            })
+            .map(|commit| analyze_commit(&policy, SourceKind::Commit, commit))
             .collect::<Result<Vec<_>, _>>()
             .map_err(CliError::AnalyzeMessage)?
             .into_iter()
@@ -242,14 +237,7 @@ fn run_audit(args: AuditArgs) -> Result<(), CliError> {
     let violations = collect_all_messages()
         .map_err(CliError::Git)?
         .into_iter()
-        .map(|commit| {
-            let source = Source {
-                kind: SourceKind::Audit,
-                path: None,
-                commit_sha: Some(commit.sha),
-            };
-            policy.analyze(source, &commit.message)
-        })
+        .map(|commit| analyze_commit(&policy, SourceKind::Audit, commit))
         .collect::<Result<Vec<_>, _>>()
         .map_err(CliError::AnalyzeMessage)?
         .into_iter()
@@ -268,6 +256,39 @@ fn run_audit(args: AuditArgs) -> Result<(), CliError> {
     let output = render_violations(args.format, &violations).map_err(CliError::RenderReport)?;
     println!("{output}");
     Err(CliError::PolicyViolation)
+}
+
+fn analyze_commit(
+    policy: &Policy,
+    kind: SourceKind,
+    commit: CommitRecord,
+) -> Result<Vec<Violation>, AnalysisError> {
+    let source = Source {
+        kind,
+        path: None,
+        commit_sha: Some(commit.sha),
+    };
+
+    let mut violations = Vec::new();
+    violations.extend(policy.analyze_identity(
+        source.clone(),
+        &Identity {
+            role: IdentityRole::Author,
+            name: commit.author_name,
+            email: commit.author_email,
+        },
+    )?);
+    violations.extend(policy.analyze_identity(
+        source.clone(),
+        &Identity {
+            role: IdentityRole::Committer,
+            name: commit.committer_name,
+            email: commit.committer_email,
+        },
+    )?);
+    violations.extend(policy.analyze(source, &commit.message)?);
+
+    Ok(violations)
 }
 
 #[derive(Debug, Error)]

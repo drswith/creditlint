@@ -25,18 +25,19 @@ or a Git revision range.
 #### Scenario: Check Git range
 
 - **WHEN** the user runs `creditlint check --range origin/main..HEAD`
-- **THEN** the CLI SHALL validate every commit message in that revision range
+- **THEN** the CLI SHALL validate every commit's Git author metadata, committer
+  metadata, and message in that revision range
 
 ### Requirement: Audit Command
 
 The CLI SHALL provide an `audit --all` command that scans all reachable commit
-messages in the current repository.
+metadata and messages in the current repository.
 
 #### Scenario: Audit all commits
 
 - **WHEN** the user runs `creditlint audit --all`
-- **THEN** the CLI SHALL evaluate all reachable commit messages and report any
-  violations
+- **THEN** the CLI SHALL evaluate all reachable commit identity metadata and
+  messages and report any violations
 
 #### Scenario: Audit outside Git repository
 
@@ -92,8 +93,9 @@ The CLI SHALL use stable exit codes so hooks and CI can depend on them.
 
 ### Requirement: Git Metadata Collection
 
-The CLI SHALL collect commit messages from Git using deterministic delimiters
-that can be parsed without mixing commits together.
+The CLI SHALL collect commit SHA, author name, author email, committer name,
+committer email, and commit message from Git using deterministic delimiters that
+can be parsed without mixing commits together.
 
 #### Scenario: Git range cannot be resolved
 
@@ -105,6 +107,13 @@ that can be parsed without mixing commits together.
 - **WHEN** a violation is found in a Git range check
 - **THEN** the CLI SHALL include the offending commit SHA in the violation
   report
+
+#### Scenario: Git author violation includes SHA and identity field
+
+- **WHEN** a Git range check finds `Cursor Agent <cursoragent@cursor.com>` in
+  author metadata
+- **THEN** the CLI SHALL include the offending commit SHA and the matching
+  author field in the violation report
 
 #### Scenario: Audit processes large histories incrementally
 

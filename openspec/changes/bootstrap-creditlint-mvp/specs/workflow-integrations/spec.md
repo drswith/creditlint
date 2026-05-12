@@ -86,6 +86,12 @@ squash merge enabled.
 - **THEN** it SHALL list which policy features can and cannot be represented as
   a single commit-message regex
 
+#### Scenario: Identity ruleset boundary is documented
+
+- **WHEN** documentation describes GitHub ruleset export
+- **THEN** it SHALL state that Git author and committer identity rules are not
+  represented by the commit-message regex export
+
 #### Scenario: Unsupported ruleset conversion fails closed
 
 - **WHEN** the active policy cannot be represented safely as a GitHub ruleset

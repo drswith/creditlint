@@ -179,6 +179,7 @@ mod tests {
                 value_matcher: ValueMatcher::Any,
                 message: "no generated-by".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec!["Generated-by".to_string()],
         };
 
@@ -196,6 +197,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("agent".to_string()),
                 message: "no regex keys".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec![],
         };
 
@@ -213,6 +215,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("(?i)^codex$".to_string()),
                 message: "no anchored values".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec![],
         };
 
@@ -230,6 +233,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("(?i)made with".to_string()),
                 message: "no prose export".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec![],
         };
 
@@ -247,6 +251,7 @@ mod tests {
                 value_matcher: ValueMatcher::Pattern("(?i)(?m)^made with$".to_string()),
                 message: "no inline flags".to_string(),
             }],
+            identity_rules: vec![],
             allowed_provenance_keys: vec![],
         };
 

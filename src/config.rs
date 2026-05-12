@@ -6,11 +6,17 @@ use regex::Regex;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::policy::{FieldMatcher, Policy, Rule, RuleKind, ValueMatcher};
+use crate::policy::{
+    FieldMatcher, IdentityRole, IdentityRoleMatcher, IdentityRule, Policy, Rule, RuleKind,
+    ValueMatcher,
+};
 
 pub const CONFIG_FILE_NAME: &str = ".creditlint.yml";
 const DEFAULT_CONFIG_CONTENTS: &str = r#"version: 1
 rules:
+  forbidden_identities:
+    - name_pattern: "(?i)(cursor agent|codex|claude|copilot|openai|anthropic|gemini)"
+      email_pattern: "(?i)(cursoragent@cursor\\.com|codex|claude|copilot|openai|anthropic|gemini)"
   forbidden_trailers:
     - key: Co-authored-by
       value_pattern: "(?i)(codex|claude|cursor|copilot|openai|anthropic|gemini|ai)"
@@ -138,6 +144,11 @@ impl RawConfig {
         }
 
         let mut rules = Vec::with_capacity(self.rules.forbidden_trailers.len());
+        let mut identity_rules = Vec::with_capacity(self.rules.forbidden_identities.len());
+
+        for (index, raw_rule) in self.rules.forbidden_identities.into_iter().enumerate() {
+            identity_rules.push(raw_rule.into_identity_rule(index)?);
+        }
 
         for (index, raw_rule) in self.rules.forbidden_trailers.into_iter().enumerate() {
             rules.push(raw_rule.into_rule(index)?);
@@ -145,6 +156,7 @@ impl RawConfig {
 
         Ok(Policy {
             rules,
+            identity_rules,
             allowed_provenance_keys: self.rules.allowed_provenance_trailers,
         })
     }
@@ -152,9 +164,64 @@ impl RawConfig {
 
 #[derive(Debug, Deserialize)]
 struct RawRules {
+    #[serde(default)]
+    forbidden_identities: Vec<RawForbiddenIdentityRule>,
+    #[serde(default)]
     forbidden_trailers: Vec<RawForbiddenRule>,
     #[serde(default)]
     allowed_provenance_trailers: Vec<String>,
+}
+
+#[derive(Debug, Deserialize)]
+struct RawForbiddenIdentityRule {
+    role: Option<RawIdentityRole>,
+    name_pattern: Option<String>,
+    email_pattern: Option<String>,
+}
+
+impl RawForbiddenIdentityRule {
+    fn into_identity_rule(self, index: usize) -> Result<IdentityRule, ConfigError> {
+        if self.name_pattern.is_none() && self.email_pattern.is_none() {
+            return Err(ConfigError::Validation(format!(
+                "forbidden_identities[{index}] must define name_pattern or email_pattern"
+            )));
+        }
+
+        if let Some(pattern) = &self.name_pattern {
+            validate_identity_pattern(pattern, index, "name")?;
+        }
+
+        if let Some(pattern) = &self.email_pattern {
+            validate_identity_pattern(pattern, index, "email")?;
+        }
+
+        Ok(IdentityRule {
+            id: format!("config-forbidden-identity-{index}"),
+            role_matcher: self
+                .role
+                .map(|role| IdentityRoleMatcher::Role(role.into()))
+                .unwrap_or(IdentityRoleMatcher::Any),
+            name_pattern: self.name_pattern,
+            email_pattern: self.email_pattern,
+            message: "Config-defined Git identity is not allowed".to_string(),
+        })
+    }
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum RawIdentityRole {
+    Author,
+    Committer,
+}
+
+impl From<RawIdentityRole> for IdentityRole {
+    fn from(value: RawIdentityRole) -> Self {
+        match value {
+            RawIdentityRole::Author => IdentityRole::Author,
+            RawIdentityRole::Committer => IdentityRole::Committer,
+        }
+    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -238,6 +305,20 @@ fn validate_pattern(pattern: &str, index: usize, matcher_name: &str) -> Result<(
     Ok(())
 }
 
+fn validate_identity_pattern(
+    pattern: &str,
+    index: usize,
+    matcher_name: &str,
+) -> Result<(), ConfigError> {
+    Regex::new(pattern).map_err(|source| {
+        ConfigError::Validation(format!(
+            "forbidden_identities[{index}] has invalid {matcher_name}_pattern `{pattern}`: {source}"
+        ))
+    })?;
+
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use std::fs;
@@ -245,7 +326,7 @@ mod tests {
     use tempfile::tempdir;
 
     use super::{ConfigError, load_policy};
-    use crate::policy::{FieldMatcher, RuleKind, Source, SourceKind};
+    use crate::policy::{FieldMatcher, Identity, IdentityRole, RuleKind, Source, SourceKind};
 
     #[test]
     fn loads_custom_rule_from_config_file() {
@@ -260,6 +341,9 @@ mod tests {
             r#"
 version: 1
 rules:
+  forbidden_identities:
+    - role: author
+      name_pattern: "(?i)agent"
   forbidden_trailers:
     - key: X-Custom-Attribution
       value_pattern: "(?i)agent"
@@ -276,11 +360,29 @@ rules:
             vec!["Tool-Used".to_string()]
         );
         assert_eq!(policy.rules.len(), 1);
+        assert_eq!(policy.identity_rules.len(), 1);
         assert_eq!(policy.rules[0].kind, RuleKind::ForbiddenTrailer);
         assert_eq!(
             policy.rules[0].field_matcher,
             FieldMatcher::Exact("X-Custom-Attribution".to_string())
         );
+
+        let violations = policy
+            .analyze_identity(
+                Source {
+                    kind: SourceKind::Commit,
+                    path: None,
+                    commit_sha: None,
+                },
+                &Identity {
+                    role: IdentityRole::Author,
+                    name: "Agent Smith".to_string(),
+                    email: "agent@example.com".to_string(),
+                },
+            )
+            .expect("identity analysis");
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "config-forbidden-identity-0");
     }
 
     #[test]
@@ -310,6 +412,8 @@ rules:
             r#"
 version: 1
 rules:
+  forbidden_identities:
+    - name_pattern: "["
   forbidden_trailers:
     - key: X-Bad
       value_pattern: "["
@@ -338,5 +442,27 @@ rules:
             .expect("analysis should succeed");
 
         assert_eq!(violations.len(), 1);
+    }
+
+    #[test]
+    fn config_can_define_only_identity_rules() {
+        let temp_dir = tempdir().expect("tempdir");
+        let repo_root = temp_dir.path();
+        fs::create_dir(repo_root.join(".git")).expect("git dir");
+
+        fs::write(
+            repo_root.join(".creditlint.yml"),
+            r#"
+version: 1
+rules:
+  forbidden_identities:
+    - email_pattern: "(?i)cursoragent@cursor\\.com"
+"#,
+        )
+        .expect("config file");
+
+        let policy = load_policy(repo_root).expect("load policy");
+        assert!(policy.rules.is_empty());
+        assert_eq!(policy.identity_rules.len(), 1);
     }
 }

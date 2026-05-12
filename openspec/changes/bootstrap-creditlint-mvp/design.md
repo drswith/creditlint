@@ -41,6 +41,8 @@ useful only as a local runner for OpenSpec commands during planning.
 The MVP is designed for these actors and failure modes:
 
 - Default-behavior tools that automatically append authorship-like markers.
+- Default-behavior tools that create commits using tool-controlled Git author or
+  committer identities.
 - Contributors who accidentally paste tool credit markers into commits, pull
   requests, or merge messages.
 - Cloud agents that create commits or pull requests outside a developer's local
@@ -158,14 +160,19 @@ would be misleading because unsupported policy semantics could silently be lost.
 
 ### Default policy blocks AI/tool authorship markers, not all co-authors
 
-The default policy should reject `Co-authored-by` only when its value looks like
-an AI tool, bot, or coding-agent vendor. Human co-authors should remain allowed
-unless the project config chooses a stricter rule.
+The default policy should reject AI/tool identities in both Git identity metadata
+and authorship-like message fields. For message trailers, it should reject
+`Co-authored-by` only when its value looks like an AI tool, bot, or coding-agent
+vendor. Human authors and co-authors should remain allowed unless the project
+config chooses a stricter rule.
 
 Rationale:
 
 - `Co-authored-by` is legitimate for human collaboration.
-- The immediate risk is unauthorized tool authorship or credit markers.
+- Git `author` and `committer` metadata are first-class authorship signals and
+  must be checked separately from commit message text.
+- The immediate risk is unauthorized tool identity, authorship, or credit
+  markers.
 - Teams can still configure "no co-authors" or allowlist-only modes.
 
 Alternative considered: block every `Co-authored-by` trailer by default. That is
@@ -233,7 +240,8 @@ land in stages:
    build/test tooling, and CLI entrypoint.
 2. Implement the policy engine with unit tests.
 3. Add `check` input modes and output formats.
-4. Add Git range/audit commands and integration tests using temporary repos.
+4. Add Git range/audit commands that collect identity metadata and messages,
+   plus integration tests using temporary repos.
 5. Add `init`, hook installation, and CI examples.
 6. Add PR title/body text-file validation documentation.
 7. Add GitHub ruleset pattern generation after core behavior is stable.

@@ -74,6 +74,27 @@ fn write_and_commit(
     assert!(status.success(), "git commit should succeed");
 }
 
+fn write_and_commit_with_author(
+    repo: &std::path::Path,
+    filename: &str,
+    contents: &str,
+    subject: &str,
+    author: &str,
+) {
+    fs::write(repo.join(filename), contents).expect("write file");
+    run_git(repo, ["add", filename]);
+
+    let status = ProcessCommand::new("git")
+        .current_dir(repo)
+        .args(["commit", "-m", subject, "--author", author])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .expect("git commit");
+
+    assert!(status.success(), "git commit should succeed");
+}
+
 fn commit_with_hook_path(
     repo: &Path,
     filename: &str,
@@ -289,6 +310,7 @@ fn init_writes_default_config_file() {
     let config_path = repo.path().join(".creditlint.yml");
     let config = fs::read_to_string(&config_path).expect("config file");
     assert!(config.contains("version: 1"));
+    assert!(config.contains("forbidden_identities"));
     assert!(config.contains("key: Co-authored-by"));
     assert!(config.contains("allowed_provenance_trailers"));
 }
@@ -430,6 +452,33 @@ fn check_range_violating_commit_returns_one_and_includes_sha() {
     assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("forbidden-ai-coauthor"));
+    assert!(stdout.contains(&violating_sha));
+}
+
+#[test]
+fn check_range_rejects_cursor_agent_git_author_identity() {
+    let repo = init_git_repo();
+    write_and_commit(repo.path(), "first.txt", "first\n", "first commit", None);
+    write_and_commit_with_author(
+        repo.path(),
+        "second.txt",
+        "second\n",
+        "second commit",
+        "Cursor Agent <cursoragent@cursor.com>",
+    );
+    let violating_sha = head_sha(repo.path());
+
+    let output = Command::cargo_bin("creditlint")
+        .expect("binary")
+        .current_dir(repo.path())
+        .args(["check", "--range", "HEAD~1..HEAD"])
+        .output()
+        .expect("run command");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("forbidden-ai-git-identity"));
+    assert!(stdout.contains("author.name"));
     assert!(stdout.contains(&violating_sha));
 }
 

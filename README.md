@@ -70,6 +70,10 @@ Exit codes:
 version: 1
 
 rules:
+  forbidden_identities:
+    - name_pattern: "(?i)(cursor agent|codex|claude|copilot|openai|anthropic|gemini)"
+      email_pattern: "(?i)(cursoragent@cursor\\.com|codex|claude|copilot|openai|anthropic|gemini)"
+
   forbidden_trailers:
     - key: Co-authored-by
       value_pattern: "(?i)(codex|claude|cursor|copilot|openai|anthropic|gemini|ai)"
@@ -97,6 +101,12 @@ rules:
 
 CI range checks are useful, but they do not by themselves guarantee validation
 of a final squash merge message edited by the hosting platform UI.
+
+`check --range` and `audit --all` validate both Git identity metadata
+(`author`/`committer` name and email) and commit messages. This covers commits
+whose rendered log output shows identities such as
+`Author: Cursor Agent <cursoragent@cursor.com>` even when the commit message
+itself is clean.
 
 ## GitHub Actions
 
@@ -261,14 +271,16 @@ Currently representable as one GitHub ruleset regex:
 
 Not representable safely as one GitHub ruleset regex:
 
+- Git author or committer identity rules; enforce those with `creditlint
+  check --range`, `creditlint audit --all`, or platform identity restrictions
 - policies that need forbidden/allowed precedence on the same trailer key
 - forbidden trailer rules that depend on regex-matched trailer field names
 - free-form rules that are not a single anchored line regex
 - policies that would require normalization or logic beyond one regex pass
 
-When the active policy falls outside the safe subset, `creditlint github
-ruleset-pattern` fails closed and points the repository to merge-bot validation
-for final squash messages.
+When the active message-policy subset falls outside the safe subset,
+`creditlint github ruleset-pattern` fails closed and points the repository to
+merge-bot validation for final squash messages.
 
 ## Privacy
 
