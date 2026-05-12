@@ -114,3 +114,17 @@ pub enum CliError {
     #[error("failed to render output")]
     RenderReport(#[source] serde_json::Error),
 }
+
+impl CliError {
+    pub fn exit_code(&self) -> i32 {
+        match self {
+            CliError::PolicyViolation => 1,
+            CliError::InvalidInputSelection
+            | CliError::Config(_)
+            | CliError::ReadMessage { .. }
+            | CliError::ReadStdin(_)
+            | CliError::AnalyzeMessage(_)
+            | CliError::RenderReport(_) => 2,
+        }
+    }
+}

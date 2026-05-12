@@ -1,6 +1,9 @@
 fn main() {
     if let Err(error) = creditlint::cli::run() {
-        eprintln!("{error}");
-        std::process::exit(1);
+        let exit_code = error.exit_code();
+        if exit_code != 1 {
+            eprintln!("{error}");
+        }
+        std::process::exit(exit_code);
     }
 }
