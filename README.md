@@ -199,6 +199,17 @@ message generation.
 The planned CLI is local-first. By default, `creditlint` should not upload commit
 messages, pull request text, or policy files to any hosted service.
 
+Current default boundary:
+
+- `creditlint` reads local message text, Git metadata, and repository config.
+- `creditlint` does not send commit messages or pull request text to a remote
+  API.
+- `creditlint` does not require a hosted account or background service.
+- Network access is not part of the default policy-evaluation path.
+
+If a future change introduces optional hosted integrations, that behavior should
+be documented separately instead of being folded into the default CLI contract.
+
 ## Threat Model
 
 The MVP is designed to catch:

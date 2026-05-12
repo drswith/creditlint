@@ -40,7 +40,7 @@
 - [x] 5.3 Add GitHub Actions documentation using the native binary or Cargo and full-history checkout for range checks.
 - [x] 5.4 Add local Git hook and pre-commit documentation.
 - [x] 5.5 Document pull request title/body validation by writing PR text to a file and using `check --message-file`.
-- [ ] 5.6 Document the default no-telemetry/no-network privacy boundary.
+- [x] 5.6 Document the default no-telemetry/no-network privacy boundary.
 
 ## 6. GitHub Squash Merge Coverage
 

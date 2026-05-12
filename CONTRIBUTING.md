@@ -161,3 +161,14 @@ creditlint check --message-file /tmp/creditlint-pr-message.txt
 
 This is especially important for squash-merge workflows where platform-generated
 final commit messages can inherit pull request text.
+
+## Privacy Notes
+
+Keep the default privacy boundary explicit in docs and reviews:
+
+- No hosted service is required for normal CLI use.
+- Commit messages, pull request text, and policy files stay local by default.
+- Network access is not part of the default evaluation flow.
+
+Do not casually add telemetry, background syncing, or remote policy lookups
+without a separate OpenSpec change.
