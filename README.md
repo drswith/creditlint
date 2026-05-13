@@ -205,6 +205,16 @@ Resolution order:
 Do not publish the main npm package as a user-facing release until the matching
 platform packages have staged native binaries.
 
+Maintainers can publish all npm packages in the required order from the
+repository root:
+
+```sh
+scripts/publish-npm-packages.sh --dry-run
+scripts/publish-npm-packages.sh --execute
+```
+
+The script refuses to run if any required platform binary is missing.
+
 ## Local Hooks
 
 Initialize a repository policy file:

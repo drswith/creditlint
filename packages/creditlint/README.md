@@ -60,13 +60,8 @@ Then publish platform packages first, followed by the main wrapper package:
 ```sh
 cd /path/to/creditlint
 
-pnpm --filter creditlint-darwin-arm64 publish
-pnpm --filter creditlint-darwin-x64 publish
-pnpm --filter creditlint-linux-arm64 publish
-pnpm --filter creditlint-linux-x64 publish
-pnpm --filter creditlint-windows-x64 publish
-
-pnpm --filter creditlint publish
+scripts/publish-npm-packages.sh --dry-run
+scripts/publish-npm-packages.sh --execute
 ```
 
 Do not publish `creditlint` as a normal user-facing release until the matching

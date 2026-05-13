@@ -135,6 +135,7 @@ test("supported platform without native binary reports missing optional package"
       env: {},
       platform: "linux",
       arch: "x64",
+      baseDir: tempDir,
       repoRoot: tempDir,
     });
 

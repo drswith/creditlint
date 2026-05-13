@@ -55,3 +55,21 @@ Documentation SHALL state that npm consumers should not need Rust.
 - **WHEN** a maintainer reads the npm wrapper README
 - **THEN** it SHALL explain that platform package binaries must be staged before
   publishing and list the manual publish order
+
+### Requirement: Ordered Publish Script
+
+The repository SHALL provide a script for publishing npm packages in dependency
+order.
+
+#### Scenario: Missing native binaries fail before publish
+
+- **WHEN** a maintainer runs the npm publish script without all required
+  platform binaries
+- **THEN** the script SHALL exit non-zero before running any publish command
+
+#### Scenario: Platform packages publish before main package
+
+- **WHEN** a maintainer runs the npm publish script with all required platform
+  binaries
+- **THEN** the script SHALL publish platform packages before the main
+  `creditlint` package

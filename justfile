@@ -37,3 +37,9 @@ release-build:
 
 cross-build target:
     cross build --release --target {{target}}
+
+npm-publish-dry-run:
+    ./scripts/publish-npm-packages.sh --dry-run
+
+npm-publish:
+    ./scripts/publish-npm-packages.sh --execute

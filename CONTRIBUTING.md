@@ -83,6 +83,14 @@ without a Rust toolchain. Publishable npm releases must provide native binaries
 through platform optional packages under `packages/creditlint-*`; `CREDITLINT_BIN`
 and Cargo build output fallback paths are for tests and repository development.
 
+Use the repository script for manual npm publishing so platform packages are
+published before the main wrapper package:
+
+```sh
+scripts/publish-npm-packages.sh --dry-run
+scripts/publish-npm-packages.sh --execute
+```
+
 ## Commit Metadata
 
 This project is specifically about credit and authorship metadata. Contributors

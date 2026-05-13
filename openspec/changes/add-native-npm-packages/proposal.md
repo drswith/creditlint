@@ -14,6 +14,8 @@ a good default for npm consumers.
   back to local development binaries.
 - Add tests for platform package resolution and unsupported platforms.
 - Document the npm distribution boundary and first-publish flow.
+- Add a root script that publishes platform packages first, then the main
+  wrapper package.
 
 ## Capabilities
 
@@ -32,6 +34,7 @@ a good default for npm consumers.
 - Adds package directories for Linux, macOS, and Windows x64/arm64 targets that
   match the release artifact matrix where practical.
 - Updates npm package metadata, wrapper behavior, tests, and documentation.
+- Adds a maintainer script for ordered npm publishing.
 - Does not add postinstall binary downloads.
 - Does not remove `CREDITLINT_BIN`, which remains the deterministic override for
   tests and local development.
