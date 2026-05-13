@@ -221,10 +221,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
-          registry-url: https://registry.npmjs.org
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -250,6 +249,8 @@ jobs:
           cp dist/release/creditlint-x86_64-pc-windows-msvc.exe dist/npm/creditlint-windows-x64.exe
 
       - name: Publish npm packages with trusted publishing
+        env:
+          NODE_AUTH_TOKEN: ""
         run: scripts/publish-npm-packages.sh --execute --dist-dir dist/npm
 
   publish-crate:
