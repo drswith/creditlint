@@ -16,4 +16,5 @@
 - [x] 3.2 Document npm installation without Rust and first manual publish steps.
 - [x] 3.3 Add ordered npm publish script for maintainers.
 - [x] 3.4 Stage npm native binaries from dist or the local release build.
-- [ ] 3.5 Run pnpm tests, Rust validation, workflow linting, and OpenSpec validation.
+- [x] 3.5 Add trusted publishing bootstrap placeholder script.
+- [x] 3.6 Run pnpm tests, Rust validation, workflow linting, and OpenSpec validation.

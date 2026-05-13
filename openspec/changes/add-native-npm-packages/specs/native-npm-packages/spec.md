@@ -80,3 +80,25 @@ order.
   binaries
 - **THEN** the script SHALL publish platform packages before the main
   `creditlint` package
+
+### Requirement: Trusted Publishing Bootstrap
+
+The repository SHALL provide a bootstrap publish path for creating npm package
+records before trusted publishing is configured.
+
+#### Scenario: Bootstrap does not require native binaries
+
+- **WHEN** a maintainer runs the trusted publishing bootstrap script
+- **THEN** it SHALL publish placeholder packages without requiring native
+  binaries
+
+#### Scenario: Bootstrap uses non-latest prerelease
+
+- **WHEN** the bootstrap script publishes placeholder packages
+- **THEN** it SHALL use version `0.0.0-trust.0` and the `bootstrap` dist-tag
+
+#### Scenario: Bootstrap main package is not usable
+
+- **WHEN** a user accidentally invokes the bootstrap main package binary
+- **THEN** it SHALL exit with code `2` and explain that the version is only a
+  trusted publishing placeholder

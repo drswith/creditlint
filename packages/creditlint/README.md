@@ -60,10 +60,17 @@ Then publish platform packages first, followed by the main wrapper package:
 ```sh
 cd /path/to/creditlint
 
+scripts/bootstrap-npm-trust-packages.sh --dry-run
+scripts/bootstrap-npm-trust-packages.sh --execute
+
 scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
+
+The bootstrap script publishes placeholder `0.0.0-trust.0` packages with the
+`bootstrap` dist-tag so npm trusted publishing can be configured before CI
+publishes real release binaries.
 
 The script stages binaries from `dist/npm/` automatically. Staged binaries in
 `packages/creditlint-*/bin/` are ignored by Git.

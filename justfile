@@ -46,3 +46,9 @@ npm-publish-local-dry-run:
 
 npm-publish:
     ./scripts/publish-npm-packages.sh --execute
+
+npm-trust-bootstrap-dry-run:
+    ./scripts/bootstrap-npm-trust-packages.sh --dry-run
+
+npm-trust-bootstrap:
+    ./scripts/bootstrap-npm-trust-packages.sh --execute

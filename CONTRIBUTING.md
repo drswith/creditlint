@@ -87,10 +87,17 @@ Use the repository script for manual npm publishing so platform packages are
 published before the main wrapper package:
 
 ```sh
+scripts/bootstrap-npm-trust-packages.sh --dry-run
+scripts/bootstrap-npm-trust-packages.sh --execute
+
 scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
+
+Use the bootstrap script only to create placeholder package records for npm
+trusted publishing. It publishes `0.0.0-trust.0` with the `bootstrap` dist-tag
+and should not be promoted to `latest`.
 
 The script stages native binaries from `dist/npm/` when that directory exists.
 Use `--stage-local` only for current-platform dry runs; do not use it to publish

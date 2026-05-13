@@ -209,10 +209,17 @@ Maintainers can publish all npm packages in the required order from the
 repository root:
 
 ```sh
+scripts/bootstrap-npm-trust-packages.sh --dry-run
+scripts/bootstrap-npm-trust-packages.sh --execute
+
 scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
+
+The bootstrap script publishes `0.0.0-trust.0` with the `bootstrap` dist-tag so
+the npm package records exist before trusted publishing is configured. It does
+not publish a usable release and does not require native binaries.
 
 The script stages binaries from `dist/npm/` automatically, or with
 `--stage-local` it builds and stages the current host binary for local dry runs.
