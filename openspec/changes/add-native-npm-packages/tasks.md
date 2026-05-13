@@ -15,4 +15,5 @@
 - [x] 3.1 Add wrapper tests for platform package resolution.
 - [x] 3.2 Document npm installation without Rust and first manual publish steps.
 - [x] 3.3 Add ordered npm publish script for maintainers.
-- [x] 3.4 Run pnpm tests, Rust validation, workflow linting, and OpenSpec validation.
+- [x] 3.4 Stage npm native binaries from dist or the local release build.
+- [ ] 3.5 Run pnpm tests, Rust validation, workflow linting, and OpenSpec validation.

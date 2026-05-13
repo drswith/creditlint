@@ -87,9 +87,14 @@ Use the repository script for manual npm publishing so platform packages are
 published before the main wrapper package:
 
 ```sh
+scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
+
+The script stages native binaries from `dist/npm/` when that directory exists.
+Use `--stage-local` only for current-platform dry runs; do not use it to publish
+all platform packages from one local binary.
 
 ## Commit Metadata
 

@@ -1,6 +1,10 @@
 # Rust build output
 target/
 
+# Staged npm native package binaries
+packages/creditlint-*/bin/creditlint
+packages/creditlint-*/bin/creditlint.exe
+
 # Coverage and test output
 coverage/
 tarpaulin-report.html
@@ -22,7 +26,7 @@ pnpm-debug.log*
 
 # Package manager
 node_modules/
-npm/*/node_modules/
+packages/*/node_modules/
 .pnpm-store/
 
 # OS and editor files

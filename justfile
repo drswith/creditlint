@@ -41,5 +41,8 @@ cross-build target:
 npm-publish-dry-run:
     ./scripts/publish-npm-packages.sh --dry-run
 
+npm-publish-local-dry-run:
+    ./scripts/publish-npm-packages.sh --dry-run --stage-local
+
 npm-publish:
     ./scripts/publish-npm-packages.sh --execute

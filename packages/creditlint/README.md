@@ -60,9 +60,13 @@ Then publish platform packages first, followed by the main wrapper package:
 ```sh
 cd /path/to/creditlint
 
+scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
+
+The script stages binaries from `dist/npm/` automatically. Staged binaries in
+`packages/creditlint-*/bin/` are ignored by Git.
 
 Do not publish `creditlint` as a normal user-facing release until the matching
 platform package versions are already available.

@@ -209,11 +209,15 @@ Maintainers can publish all npm packages in the required order from the
 repository root:
 
 ```sh
+scripts/publish-npm-packages.sh --dry-run --stage-local
 scripts/publish-npm-packages.sh --dry-run
 scripts/publish-npm-packages.sh --execute
 ```
 
-The script refuses to run if any required platform binary is missing.
+The script stages binaries from `dist/npm/` automatically, or with
+`--stage-local` it builds and stages the current host binary for local dry runs.
+Staged platform binaries under `packages/creditlint-*/bin/` are ignored by Git.
+The script refuses to publish if any required platform binary is missing.
 
 ## Local Hooks
 

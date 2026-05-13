@@ -6,26 +6,31 @@ usage() {
 Usage:
   scripts/publish-npm-packages.sh --dry-run
   scripts/publish-npm-packages.sh --execute [--access public]
+  scripts/publish-npm-packages.sh --dry-run --stage-local
 
 Publishes npm platform packages first, then the main creditlint wrapper package.
 
 Options:
-  --dry-run        Validate and run pnpm publish --dry-run for every package.
-  --execute        Actually publish packages to npm.
-  --access public  Pass --access public to pnpm publish. Usually only needed for scoped packages.
-  -h, --help       Show this help.
+  --dry-run         Validate and run pnpm publish --dry-run for every package.
+  --execute         Actually publish packages to npm.
+  --stage-local     Build and stage the current host binary into the matching platform package.
+  --dist-dir DIR    Stage all platform binaries from DIR. Default: dist/npm.
+  --access public   Pass --access public to pnpm publish. Usually only needed for scoped packages.
+  -h, --help        Show this help.
 
-Required native binaries before --execute:
-  packages/creditlint-darwin-arm64/bin/creditlint
-  packages/creditlint-darwin-x64/bin/creditlint
-  packages/creditlint-linux-arm64/bin/creditlint
-  packages/creditlint-linux-x64/bin/creditlint
-  packages/creditlint-windows-x64/bin/creditlint.exe
+Expected --dist-dir layout:
+  creditlint-darwin-arm64
+  creditlint-darwin-x64
+  creditlint-linux-arm64
+  creditlint-linux-x64
+  creditlint-windows-x64.exe
 USAGE
 }
 
 mode=""
 access_args=()
+stage_local=0
+dist_dir="dist/npm"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -34,6 +39,17 @@ while [ "$#" -gt 0 ]; do
       ;;
     --execute)
       mode="execute"
+      ;;
+    --stage-local)
+      stage_local=1
+      ;;
+    --dist-dir)
+      if [ -z "${2:-}" ]; then
+        echo "error: --dist-dir requires a path" >&2
+        exit 2
+      fi
+      dist_dir="$2"
+      shift
       ;;
     --access)
       if [ "${2:-}" != "public" ]; then
@@ -65,12 +81,12 @@ fi
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
-required_binaries=(
-  "packages/creditlint-darwin-arm64/bin/creditlint"
-  "packages/creditlint-darwin-x64/bin/creditlint"
-  "packages/creditlint-linux-arm64/bin/creditlint"
-  "packages/creditlint-linux-x64/bin/creditlint"
-  "packages/creditlint-windows-x64/bin/creditlint.exe"
+platforms=(
+  "creditlint-darwin-arm64:creditlint-darwin-arm64:creditlint"
+  "creditlint-darwin-x64:creditlint-darwin-x64:creditlint"
+  "creditlint-linux-arm64:creditlint-linux-arm64:creditlint"
+  "creditlint-linux-x64:creditlint-linux-x64:creditlint"
+  "creditlint-windows-x64.exe:creditlint-windows-x64:creditlint.exe"
 )
 
 packages=(
@@ -82,16 +98,83 @@ packages=(
   "creditlint"
 )
 
+stage_binary() {
+  local source="$1"
+  local package="$2"
+  local binary_name="$3"
+  local destination="packages/${package}/bin/${binary_name}"
+
+  if [ ! -f "$source" ]; then
+    echo "missing source binary: $source" >&2
+    return 1
+  fi
+
+  cp "$source" "$destination"
+  chmod 755 "$destination"
+  echo "staged $source -> $destination"
+}
+
+if [ "$stage_local" -eq 1 ]; then
+  case "$(uname -s)-$(uname -m)" in
+    Darwin-arm64)
+      local_platform="creditlint-darwin-arm64:creditlint-darwin-arm64:creditlint"
+      ;;
+    Darwin-x86_64)
+      local_platform="creditlint-darwin-x64:creditlint-darwin-x64:creditlint"
+      ;;
+    Linux-aarch64|Linux-arm64)
+      local_platform="creditlint-linux-arm64:creditlint-linux-arm64:creditlint"
+      ;;
+    Linux-x86_64)
+      local_platform="creditlint-linux-x64:creditlint-linux-x64:creditlint"
+      ;;
+    MINGW*-x86_64|MSYS*-x86_64|CYGWIN*-x86_64)
+      local_platform="creditlint-windows-x64.exe:creditlint-windows-x64:creditlint.exe"
+      ;;
+    *)
+      echo "error: unsupported local platform for --stage-local: $(uname -s)-$(uname -m)" >&2
+      exit 2
+      ;;
+  esac
+
+  cargo build --release
+
+  IFS=: read -r _ package binary_name <<<"$local_platform"
+  local_source="target/release/creditlint"
+  if [ "$binary_name" = "creditlint.exe" ]; then
+    local_source="target/release/creditlint.exe"
+  fi
+  stage_binary "$local_source" "$package" "$binary_name"
+fi
+
+case "$dist_dir" in
+  /*)
+    dist_dir_abs="$dist_dir"
+    ;;
+  *)
+    dist_dir_abs="$repo_root/$dist_dir"
+    ;;
+esac
+if [ -d "$dist_dir_abs" ]; then
+  for platform in "${platforms[@]}"; do
+    IFS=: read -r artifact package binary_name <<<"$platform"
+    stage_binary "$dist_dir_abs/$artifact" "$package" "$binary_name"
+  done
+fi
+
 missing=0
-for binary in "${required_binaries[@]}"; do
-  if [ ! -f "$binary" ]; then
-    echo "missing native binary: $binary" >&2
+for platform in "${platforms[@]}"; do
+  IFS=: read -r _ package binary_name <<<"$platform"
+  destination="packages/${package}/bin/${binary_name}"
+  if [ ! -f "$destination" ]; then
+    echo "missing native binary: $destination" >&2
     missing=1
   fi
 done
 
 if [ "$missing" -ne 0 ]; then
   echo "error: stage all native binaries before publishing npm packages" >&2
+  echo "hint: place release binaries in $dist_dir/ or use --stage-local for current-platform dry runs" >&2
   exit 2
 fi
 

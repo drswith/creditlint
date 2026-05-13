@@ -67,6 +67,13 @@ order.
   platform binaries
 - **THEN** the script SHALL exit non-zero before running any publish command
 
+#### Scenario: Dist binaries are staged automatically
+
+- **WHEN** the configured npm dist directory contains all required platform
+  binaries
+- **THEN** the script SHALL copy them into the matching platform package `bin`
+  directories before publishing
+
 #### Scenario: Platform packages publish before main package
 
 - **WHEN** a maintainer runs the npm publish script with all required platform
