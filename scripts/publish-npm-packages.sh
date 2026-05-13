@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   scripts/publish-npm-packages.sh --dry-run
-  scripts/publish-npm-packages.sh --execute [--access public]
+  scripts/publish-npm-packages.sh --execute [--access public] [--registry URL]
   scripts/publish-npm-packages.sh --dry-run --stage-local
 
 Publishes npm platform packages first, then the main creditlint wrapper package.
@@ -16,6 +16,7 @@ Options:
   --stage-local     Build and stage the current host binary into the matching platform package.
   --dist-dir DIR    Stage all platform binaries from DIR. Default: dist/npm.
   --access public   Pass --access public to pnpm publish. Usually only needed for scoped packages.
+  --registry URL    Publish registry. Default: https://registry.npmjs.org/
   -h, --help        Show this help.
 
 Expected --dist-dir layout:
@@ -31,6 +32,7 @@ mode=""
 access_args=()
 stage_local=0
 dist_dir="dist/npm"
+registry="https://registry.npmjs.org/"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -57,6 +59,14 @@ while [ "$#" -gt 0 ]; do
         exit 2
       fi
       access_args=(--access public)
+      shift
+      ;;
+    --registry)
+      if [ -z "${2:-}" ]; then
+        echo "error: --registry requires a URL" >&2
+        exit 2
+      fi
+      registry="$2"
       shift
       ;;
     -h|--help)
@@ -182,6 +192,7 @@ pnpm install --frozen-lockfile
 pnpm --filter creditlint test
 
 publish_args=()
+publish_args+=(--registry "$registry")
 if [ "$mode" = "dry-run" ]; then
   publish_args+=(--dry-run)
 fi

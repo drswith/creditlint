@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   scripts/bootstrap-npm-trust-packages.sh --dry-run
-  scripts/bootstrap-npm-trust-packages.sh --execute
+  scripts/bootstrap-npm-trust-packages.sh --execute [--registry URL]
 
 Publishes placeholder npm packages so npm trusted publishing can be configured
 before CI publishes real native binaries.
@@ -15,15 +15,17 @@ script does not publish a usable creditlint release and does not require native
 binaries.
 
 Options:
-  --dry-run   Run npm publish --dry-run from generated placeholder packages.
-  --execute   Actually publish placeholder packages to npm with tag bootstrap.
-  -h, --help  Show this help.
+  --dry-run       Run npm publish --dry-run from generated placeholder packages.
+  --execute       Actually publish placeholder packages to npm with tag bootstrap.
+  --registry URL  Publish registry. Default: https://registry.npmjs.org/
+  -h, --help      Show this help.
 USAGE
 }
 
 mode=""
 bootstrap_version="0.0.0-trust.0"
 tag="bootstrap"
+registry="https://registry.npmjs.org/"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -32,6 +34,14 @@ while [ "$#" -gt 0 ]; do
       ;;
     --execute)
       mode="execute"
+      ;;
+    --registry)
+      if [ -z "${2:-}" ]; then
+        echo "error: --registry requires a URL" >&2
+        exit 2
+      fi
+      registry="$2"
+      shift
       ;;
     -h|--help)
       usage
@@ -131,7 +141,7 @@ for (const packageName of packages) {
 }
 NODE
 
-publish_args=(--tag "$tag")
+publish_args=(--tag "$tag" --registry "$registry")
 if [ "$mode" = "dry-run" ]; then
   publish_args+=(--dry-run)
 fi

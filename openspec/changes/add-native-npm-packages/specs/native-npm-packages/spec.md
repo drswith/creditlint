@@ -97,6 +97,12 @@ records before trusted publishing is configured.
 - **WHEN** the bootstrap script publishes placeholder packages
 - **THEN** it SHALL use version `0.0.0-trust.0` and the `bootstrap` dist-tag
 
+#### Scenario: Bootstrap publishes to official npm by default
+
+- **WHEN** local npm configuration points at a registry mirror
+- **THEN** the bootstrap script SHALL still publish to
+  `https://registry.npmjs.org/` unless a registry override is provided
+
 #### Scenario: Bootstrap main package is not usable
 
 - **WHEN** a user accidentally invokes the bootstrap main package binary
