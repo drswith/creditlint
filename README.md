@@ -48,6 +48,19 @@ they are added without explicit maintainer approval.
 - Provenance markers such as `AI-Assisted` or `Tool-Used` can disclose process
   without implying authorship.
 
+## Rollout Skill
+
+If you want an agent to help roll out `creditlint` for strong interception in
+another repository, use the repository-local skill:
+
+- `skills/enforcement-rollout/SKILL.md`
+
+Copyable prompt:
+
+```text
+Use the creditlint repository skill `enforcement-rollout` and help me deploy creditlint in this repository for the strongest practical interception. Check what is already covered, identify the remaining gaps across local hooks, CI commit checks, PR title/body checks, final squash/merge message enforcement, and repository settings, then give me an exact rollout plan.
+```
+
 ## CLI
 
 ```sh
