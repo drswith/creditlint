@@ -1,6 +1,6 @@
 {
   "name": "creditlint-darwin-x64",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native creditlint binary for macOS x64",
   "license": "MIT",
   "homepage": "https://github.com/Drswith/creditlint",

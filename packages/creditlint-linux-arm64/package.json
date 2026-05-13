@@ -1,6 +1,6 @@
 {
   "name": "creditlint-linux-arm64",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Native creditlint binary for Linux arm64",
   "license": "MIT",
   "homepage": "https://github.com/Drswith/creditlint",
