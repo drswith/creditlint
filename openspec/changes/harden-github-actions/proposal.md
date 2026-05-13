@@ -14,6 +14,7 @@ release automation should be explicit, repeatable, and harder to misuse.
 - Narrow default workflow permissions and grant write access only where needed.
 - Make macOS release runner architecture explicit and verify Unix artifact
   architecture.
+- Add cross-platform release artifact smoke tests after artifacts are staged.
 - Generate and publish release checksums for native artifacts.
 
 ## Capabilities

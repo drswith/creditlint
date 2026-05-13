@@ -12,6 +12,7 @@
 - [x] 2.4 Use explicit macOS runner labels and verify Unix binary architectures.
 - [x] 2.5 Generate, upload, and tag-publish a combined `SHA256SUMS` file.
 - [x] 2.6 Add release workflow concurrency controls.
+- [x] 2.7 Add a cross-platform artifact smoke-test job that validates downloaded release artifacts before publish jobs.
 
 ## 3. Documentation and Validation
 

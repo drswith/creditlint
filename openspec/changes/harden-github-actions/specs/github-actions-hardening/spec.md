@@ -69,6 +69,23 @@ The release workflow SHALL verify Unix artifact architectures before publishing.
 - **WHEN** the macOS Intel release artifact is built
 - **THEN** the workflow SHALL verify the binary reports an x86_64 architecture
 
+### Requirement: Release Artifact Smoke Tests
+
+The release workflow SHALL re-test downloaded release artifacts on matching
+platform runners before publish jobs begin.
+
+#### Scenario: Unix release artifact is smoke tested after download
+
+- **WHEN** a Unix release artifact is downloaded in the release workflow
+- **THEN** the workflow SHALL run a smoke test against the downloaded binary on
+  a runner that matches the artifact platform
+
+#### Scenario: Windows release artifact is smoke tested after download
+
+- **WHEN** a Windows release artifact is downloaded in the release workflow
+- **THEN** the workflow SHALL run a smoke test against the downloaded `.exe` on
+  a Windows runner before publish jobs depend on it
+
 ### Requirement: Workflow Concurrency
 
 Workflows SHALL define concurrency groups to avoid duplicate runs racing each

@@ -16,6 +16,8 @@ the repository state before building and publishing assets.
 - Publish checksum material alongside native release artifacts.
 - Keep workflow permissions least-privilege by default.
 - Make macOS artifact architecture expectations explicit.
+- Verify downloaded release artifacts on each supported platform before
+  publish steps run.
 - Add workflow syntax/static linting to CI.
 
 **Non-Goals:**
@@ -59,6 +61,21 @@ Rationale:
 - `macos-latest` can move over time.
 - Release asset names should correspond to the architecture actually built.
 
+### Re-test downloaded artifacts on each supported platform
+
+After each platform build uploads its artifact, a second matrix job should
+download those staged artifacts onto matching runners and run the same smoke
+checks against the downloaded binary, not the build output in `target/`.
+
+Rationale:
+
+- This validates the packaged release artifact boundary, not only the local
+  build directory.
+- It catches staging or artifact naming mistakes before npm/crates publishing
+  jobs depend on those artifacts.
+- It aligns with the multi-platform artifact verification intent already used in
+  `quantex-cli`, while staying native to `creditlint`'s Rust release flow.
+
 ## Risks / Trade-offs
 
 - [Risk] Workflow linting introduces a third-party action. -> Use a widely used
@@ -68,3 +85,5 @@ Rationale:
 - [Risk] macOS runner labels can change over time. -> Use explicit labels based
   on current GitHub-hosted runner documentation and keep architecture checks in
   the workflow.
+- [Risk] Artifact smoke tests add workflow time and runner cost. -> Reuse the
+  existing staged artifacts and keep the smoke checks narrow and deterministic.
