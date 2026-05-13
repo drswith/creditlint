@@ -27,9 +27,10 @@ Before implementing a feature:
 5. Mark completed tasks by changing `- [ ]` to `- [x]`.
 6. Run OpenSpec validation before closing the work.
 
-Current active change:
+Current active changes:
 
 - `openspec/changes/bootstrap-creditlint-mvp/`
+- `openspec/changes/add-npm-wrapper-package/`
 
 Useful commands:
 
@@ -37,21 +38,24 @@ Useful commands:
 pnpm dlx @fission-ai/openspec list
 pnpm dlx @fission-ai/openspec validate --all
 pnpm dlx @fission-ai/openspec status --change bootstrap-creditlint-mvp --json
+pnpm dlx @fission-ai/openspec status --change add-npm-wrapper-package --json
 ```
 
 ## Tooling
 
-Use Cargo for implementation work. Use `pnpm dlx @fission-ai/openspec` only for
-OpenSpec commands until the repository provides a pinned OpenSpec runner.
+Use Cargo for Rust implementation work. Use pnpm for OpenSpec commands and for
+the optional npm wrapper package under `npm/creditlint`.
 
-Do not introduce npm, Yarn, or Bun runtime requirements for `creditlint` unless a
-future OpenSpec change explicitly calls for an optional wrapper package.
+Do not introduce Yarn or Bun runtime requirements for `creditlint`. Do not make
+Node.js required for users who consume the native binary, crates.io crate, or
+GitHub Release artifacts.
 
 Expected Rust tooling:
 
 - Use the checked-in `rust-toolchain.toml`.
 - Prefer `just` recipes once a `justfile` exists.
 - Prefer `cargo nextest run` for tests once configured.
+- Use `pnpm --filter creditlint test` for the optional npm wrapper package.
 - Treat `cargo-watch` as optional local convenience.
 - Use `cross` only for release packaging tasks.
 - Do not make `bacon` or `cargo-edit` required project tooling.

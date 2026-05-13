@@ -19,10 +19,18 @@ test:
 test-unit:
     cargo test
 
+test-npm:
+    pnpm --filter creditlint test
+
+openspec-validate:
+    pnpm dlx @fission-ai/openspec validate --all
+
 ci:
     cargo fmt --all --check
     cargo clippy --all-targets --all-features -- -D warnings
     cargo nextest run
+    pnpm --filter creditlint test
+    pnpm dlx @fission-ai/openspec validate --all
 
 release-build:
     cargo build --release

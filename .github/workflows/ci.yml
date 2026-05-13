@@ -38,10 +38,18 @@ jobs:
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
 
-      - name: Install pnpm for OpenSpec validation
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.33.0
+
+      - name: Install pnpm workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Check formatting
         run: cargo fmt --all --check
@@ -57,6 +65,9 @@ jobs:
 
       - name: Smoke test release binary
         run: ./scripts/smoke-release-binary.sh ./target/release/creditlint
+
+      - name: Test npm wrapper
+        run: pnpm --filter creditlint test
 
       - name: Validate OpenSpec
         run: pnpm dlx @fission-ai/openspec validate --all

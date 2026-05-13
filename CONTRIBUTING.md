@@ -24,11 +24,12 @@ openspec/changes/bootstrap-creditlint-mvp/tasks.md
 
 ## Tooling
 
-Use Cargo for implementation work.
+Use Cargo for Rust implementation work.
 
-Use pnpm only for OpenSpec commands shown in this document. Do not add npm,
-Yarn, or Bun runtime requirements for `creditlint` unless a future OpenSpec
-change requires an optional wrapper package.
+Use pnpm for OpenSpec commands and for the optional npm wrapper package under
+`npm/creditlint`. Do not add Yarn or Bun runtime requirements for `creditlint`.
+Do not make Node.js required for users who consume the native binary, crates.io
+crate, or GitHub Release artifacts.
 
 Expected Rust tooling:
 
@@ -62,9 +63,19 @@ just check
 just fmt
 just lint
 just test
+just test-npm
 just ci
 just release-build
 just cross-build x86_64-unknown-linux-gnu
+```
+
+Optional npm wrapper commands:
+
+```sh
+pnpm install
+pnpm --filter creditlint test
+cargo build
+CREDITLINT_BIN="$PWD/target/debug/creditlint" pnpm --filter creditlint run creditlint --help
 ```
 
 ## Commit Metadata
@@ -110,6 +121,7 @@ When documenting or updating CI examples:
 
 - Use Cargo or a native binary artifact path. Do not introduce Node-based
   wrappers as the default integration path.
+- Keep npm wrapper validation separate from Rust-native usage examples.
 - Use full-history checkout for range checks:
 
 ```yaml

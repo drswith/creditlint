@@ -1,0 +1,37 @@
+{
+  "name": "creditlint",
+  "version": "0.1.0",
+  "description": "Optional npm wrapper for the native creditlint CLI",
+  "license": "MIT",
+  "homepage": "https://github.com/Drswith/creditlint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drswith/creditlint.git",
+    "directory": "npm/creditlint"
+  },
+  "bugs": {
+    "url": "https://github.com/Drswith/creditlint/issues"
+  },
+  "keywords": [
+    "git",
+    "cli",
+    "policy",
+    "authorship",
+    "metadata"
+  ],
+  "bin": {
+    "creditlint": "./bin/creditlint.js"
+  },
+  "files": [
+    "bin/",
+    "native/",
+    "README.md"
+  ],
+  "scripts": {
+    "creditlint": "node ./bin/creditlint.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

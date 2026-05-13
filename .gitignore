@@ -21,6 +21,8 @@ pnpm-debug.log*
 !.env.example
 
 # Package manager
+node_modules/
+npm/*/node_modules/
 .pnpm-store/
 
 # OS and editor files

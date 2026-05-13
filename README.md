@@ -15,11 +15,13 @@ preparation.
 Active change:
 
 - `bootstrap-creditlint-mvp`
+- `add-npm-wrapper-package`
 
 Current implementation target:
 
 - Implementation stack: Rust native CLI
 - Build/package manager: Cargo
+- Optional npm workspace/package manager: pnpm
 - Rust toolchain: stable with rustfmt and clippy
 - Task runner: just
 - Test runner: cargo-nextest
@@ -165,7 +167,26 @@ crates.io. Manual `workflow_dispatch` runs build artifacts by default and can
 opt into crates.io publishing with the `publish_crate` input.
 
 The CI workflow also runs workflow linting for `.github/workflows/*.yml` and
-validates OpenSpec artifacts.
+validates the optional npm wrapper package and OpenSpec artifacts.
+
+## npm Wrapper
+
+The npm package is optional. It exists for teams that already install developer
+tools through npm, pnpm, or npx, and it delegates to the native Rust
+`creditlint` binary instead of implementing policy logic in JavaScript.
+
+Local development uses the pnpm workspace:
+
+```sh
+pnpm install
+cargo build
+CREDITLINT_BIN="$PWD/target/debug/creditlint" pnpm --filter creditlint run creditlint --help
+pnpm --filter creditlint test
+```
+
+If `CREDITLINT_BIN` is not set, the wrapper checks for a packaged native binary
+under `npm/creditlint/native/`, then falls back to repository-local Cargo build
+outputs under `target/release/` and `target/debug/`.
 
 ## Local Hooks
 

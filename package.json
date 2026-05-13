@@ -1,0 +1,10 @@
+{
+  "name": "creditlint-workspace",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "openspec:validate": "pnpm dlx @fission-ai/openspec validate --all",
+    "test": "pnpm --filter creditlint test",
+    "test:npm": "pnpm --filter creditlint test"
+  }
+}
