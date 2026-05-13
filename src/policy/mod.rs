@@ -47,6 +47,16 @@ impl Default for Policy {
                     ),
                     message: "Generated-with credit marker is not allowed".to_string(),
                 },
+                Rule {
+                    id: "forbidden-author-identity-line".to_string(),
+                    kind: RuleKind::FreeformMarker,
+                    field_matcher: FieldMatcher::Any,
+                    value_matcher: ValueMatcher::Pattern(
+                        "(?i)^author:\\s*(cursor agent|codex|claude|copilot|openai|anthropic|gemini)\\b.*$"
+                            .to_string(),
+                    ),
+                    message: "AI/tool author identity line is not allowed".to_string(),
+                },
             ],
             identity_rules: vec![IdentityRule {
                 id: "forbidden-ai-git-identity".to_string(),
@@ -384,6 +394,20 @@ mod tests {
 
         assert_eq!(violations.len(), 1);
         assert_eq!(violations[0].rule_id, "forbidden-made-with-marker");
+    }
+
+    #[test]
+    fn default_policy_rejects_cursor_agent_author_line() {
+        let policy = Policy::default();
+        let violations = policy
+            .analyze(
+                test_source(),
+                "Author: Cursor Agent <cursoragent@cursor.com>",
+            )
+            .expect("analysis should succeed");
+
+        assert_eq!(violations.len(), 1);
+        assert_eq!(violations[0].rule_id, "forbidden-author-identity-line");
     }
 
     #[test]
