@@ -5,7 +5,7 @@ usage() {
   cat <<'USAGE'
 Usage:
   scripts/bootstrap-npm-trust-packages.sh --dry-run
-  scripts/bootstrap-npm-trust-packages.sh --execute [--registry URL]
+  scripts/bootstrap-npm-trust-packages.sh --execute
 
 Publishes placeholder npm packages so npm trusted publishing can be configured
 before CI publishes real native binaries.
@@ -17,7 +17,7 @@ binaries.
 Options:
   --dry-run       Run npm publish --dry-run from generated placeholder packages.
   --execute       Actually publish placeholder packages to npm with tag bootstrap.
-  --registry URL  Publish registry. Default: https://registry.npmjs.org/
+  --registry URL  Override the project npm registry for this run.
   -h, --help      Show this help.
 USAGE
 }
@@ -25,7 +25,7 @@ USAGE
 mode=""
 bootstrap_version="0.0.0-trust.0"
 tag="bootstrap"
-registry="https://registry.npmjs.org/"
+registry=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -141,7 +141,10 @@ for (const packageName of packages) {
 }
 NODE
 
-publish_args=(--tag "$tag" --registry "$registry")
+publish_args=(--tag "$tag")
+if [ -n "$registry" ]; then
+  publish_args+=(--registry "$registry")
+fi
 if [ "$mode" = "dry-run" ]; then
   publish_args+=(--dry-run)
 fi

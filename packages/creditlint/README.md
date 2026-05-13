@@ -70,8 +70,8 @@ scripts/publish-npm-packages.sh --execute
 
 The bootstrap script publishes placeholder `0.0.0-trust.0` packages with the
 `bootstrap` dist-tag so npm trusted publishing can be configured before CI
-publishes real release binaries. Publish scripts default to
-`https://registry.npmjs.org/` even if local npm config points to a mirror.
+publishes real release binaries. Publish commands use each package's
+`publishConfig.registry`, which points at the official npm registry.
 
 The script stages binaries from `dist/npm/` automatically. Staged binaries in
 `packages/creditlint-*/bin/` are ignored by Git.

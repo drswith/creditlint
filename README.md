@@ -220,8 +220,9 @@ scripts/publish-npm-packages.sh --execute
 The bootstrap script publishes `0.0.0-trust.0` with the `bootstrap` dist-tag so
 the npm package records exist before trusted publishing is configured. It does
 not publish a usable release and does not require native binaries. Publish
-scripts default to the official npm registry even if local npm config points to
-a mirror; pass `--registry URL` only when intentionally publishing elsewhere.
+commands use each package's `publishConfig.registry`, which points at the
+official npm registry; pass `--registry URL` only when intentionally publishing
+elsewhere.
 
 The script stages binaries from `dist/npm/` automatically, or with
 `--stage-local` it builds and stages the current host binary for local dry runs.

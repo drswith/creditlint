@@ -99,9 +99,9 @@ records before trusted publishing is configured.
 
 #### Scenario: Bootstrap publishes to official npm by default
 
-- **WHEN** local npm configuration points at a registry mirror
-- **THEN** the bootstrap script SHALL still publish to
-  `https://registry.npmjs.org/` unless a registry override is provided
+- **WHEN** local user npm configuration points at a registry mirror
+- **THEN** each publishable npm package SHALL provide `publishConfig.registry`
+  set to `https://registry.npmjs.org/` unless a registry override is provided
 
 #### Scenario: Bootstrap main package is not usable
 

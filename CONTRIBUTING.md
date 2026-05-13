@@ -98,8 +98,8 @@ scripts/publish-npm-packages.sh --execute
 Use the bootstrap script only to create placeholder package records for npm
 trusted publishing. It publishes `0.0.0-trust.0` with the `bootstrap` dist-tag
 and should not be promoted to `latest`. The publish scripts default to
-`https://registry.npmjs.org/` so local mirror config does not accidentally catch
-publish commands.
+each package's `publishConfig.registry`, so local mirror config does not
+accidentally catch publish commands.
 
 The script stages native binaries from `dist/npm/` when that directory exists.
 Use `--stage-local` only for current-platform dry runs; do not use it to publish
