@@ -151,16 +151,21 @@ jobs:
 
 The release workflow produces native binaries for Linux, macOS, and Windows as
 workflow artifacts on manual runs and as GitHub Release assets for version tags.
-The fetch-depth requirement remains the same for range checks.
+It also generates a combined `SHA256SUMS` artifact and publishes it with tagged
+GitHub Releases. Release jobs run formatting, clippy, tests, and OpenSpec
+validation before building publishable artifacts.
 
 For crates.io publishing, the release workflow uses:
 
-- workflow `permissions: contents: write` for GitHub Release asset publishing
+- job-scoped `permissions: contents: write` for GitHub Release asset publishing
 - repository secret `CARGO_REGISTRY_TOKEN` for `cargo publish`
 
 Tag pushes matching `v*` publish native assets and then publish the crate to
 crates.io. Manual `workflow_dispatch` runs build artifacts by default and can
 opt into crates.io publishing with the `publish_crate` input.
+
+The CI workflow also runs workflow linting for `.github/workflows/*.yml` and
+validates OpenSpec artifacts.
 
 ## Local Hooks
 
@@ -383,7 +388,7 @@ openspec/changes/bootstrap-creditlint-mvp/tasks.md
 
 - crates.io for the `creditlint` crate
 - GitHub Actions workflow artifacts for manual release runs
-- GitHub Releases for tagged prebuilt binaries and release notes
+- GitHub Releases for tagged prebuilt binaries, `SHA256SUMS`, and release notes
 
 The published metadata points back to this repository and the future `docs.rs`
 documentation page for the crate.
@@ -397,7 +402,8 @@ just cross-build x86_64-pc-windows-msvc
 ```
 
 For consumers who do not want a Rust toolchain, prefer downloading the matching
-native binary artifact from GitHub Releases.
+native binary artifact from GitHub Releases and verifying it against
+`SHA256SUMS`.
 
 For maintainers, the crates.io publish path requires creating a crates.io API
 token and storing it in the repository as the `CARGO_REGISTRY_TOKEN` Actions

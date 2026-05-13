@@ -133,16 +133,18 @@ The repository is now in delivery preparation, not just bootstrap development.
 
 Delivery expectations:
 
-- CI validates source builds, tests, and release-binary smoke execution.
+- CI validates workflow syntax, source builds, tests, OpenSpec artifacts, and
+  release-binary smoke execution.
 - The release workflow builds native artifacts for Linux, macOS, and Windows.
-- Tagged releases should publish those binaries as GitHub Release assets.
+- Tagged releases should publish those binaries and `SHA256SUMS` as GitHub
+  Release assets.
 - Tagged releases should publish the crate to crates.io when
   `CARGO_REGISTRY_TOKEN` is configured.
 - Users should not need a Rust toolchain when consuming prebuilt binaries.
 
 Required delivery configuration:
 
-- workflow-level `permissions: contents: write` for GitHub Release asset upload
+- job-scoped `permissions: contents: write` for GitHub Release asset upload
 - repository secret `CARGO_REGISTRY_TOKEN` for `cargo publish`
 
 ## Local Hook Notes

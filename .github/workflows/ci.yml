@@ -6,8 +6,25 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  workflow-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Lint GitHub Actions workflows
+        uses: rhysd/actionlint@v1
+
   validate:
+    needs: workflow-lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -20,6 +37,11 @@ jobs:
 
       - name: Install cargo-nextest
         uses: taiki-e/install-action@nextest
+
+      - name: Install pnpm for OpenSpec validation
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
 
       - name: Check formatting
         run: cargo fmt --all --check
@@ -35,3 +57,6 @@ jobs:
 
       - name: Smoke test release binary
         run: ./scripts/smoke-release-binary.sh ./target/release/creditlint
+
+      - name: Validate OpenSpec
+        run: pnpm dlx @fission-ai/openspec validate --all
