@@ -35,6 +35,7 @@ Coding agents can add markers such as:
 
 ```text
 Co-authored-by: Codex <...>
+Author: Cursor Agent <cursoragent@cursor.com>
 Made with Cursor
 Generated with Claude
 ```
