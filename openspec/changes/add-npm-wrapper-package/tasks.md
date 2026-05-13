@@ -5,7 +5,7 @@
 
 ## 2. npm Wrapper Package
 
-- [x] 2.1 Add `npm/creditlint/package.json`.
+- [x] 2.1 Add `packages/creditlint/package.json`.
 - [x] 2.2 Add the `creditlint` bin wrapper.
 - [x] 2.3 Add package README and metadata.
 - [x] 2.4 Add wrapper tests using Node's built-in test runner.

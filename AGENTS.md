@@ -44,7 +44,7 @@ pnpm dlx @fission-ai/openspec status --change add-npm-wrapper-package --json
 ## Tooling
 
 Use Cargo for Rust implementation work. Use pnpm for OpenSpec commands and for
-the optional npm wrapper package under `npm/creditlint`.
+the optional npm wrapper package under `packages/creditlint`.
 
 Do not introduce Yarn or Bun runtime requirements for `creditlint`. Do not make
 Node.js required for users who consume the native binary, crates.io crate, or

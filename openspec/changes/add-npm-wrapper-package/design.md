@@ -29,10 +29,10 @@ logic.
 
 ## Decisions
 
-### Keep npm packaging under `npm/creditlint`
+### Keep npm packaging under `packages/creditlint`
 
 The root package is private and only defines the pnpm workspace. The publishable
-package lives under `npm/creditlint`.
+package lives under `packages/creditlint`.
 
 Rationale:
 

@@ -185,7 +185,7 @@ pnpm --filter creditlint test
 ```
 
 If `CREDITLINT_BIN` is not set, the wrapper checks for a packaged native binary
-under `npm/creditlint/native/`, then falls back to repository-local Cargo build
+under `packages/creditlint/native/`, then falls back to repository-local Cargo build
 outputs under `target/release/` and `target/debug/`.
 
 ## Local Hooks

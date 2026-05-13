@@ -11,7 +11,7 @@ The repository SHALL define a pnpm workspace for npm packaging.
 
 #### Scenario: creditlint npm package exists
 
-- **WHEN** a developer reads `npm/creditlint/package.json`
+- **WHEN** a developer reads `packages/creditlint/package.json`
 - **THEN** it SHALL define a package named `creditlint` with a `creditlint` bin
   entry
 

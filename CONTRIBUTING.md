@@ -27,7 +27,7 @@ openspec/changes/bootstrap-creditlint-mvp/tasks.md
 Use Cargo for Rust implementation work.
 
 Use pnpm for OpenSpec commands and for the optional npm wrapper package under
-`npm/creditlint`. Do not add Yarn or Bun runtime requirements for `creditlint`.
+`packages/creditlint`. Do not add Yarn or Bun runtime requirements for `creditlint`.
 Do not make Node.js required for users who consume the native binary, crates.io
 crate, or GitHub Release artifacts.
 

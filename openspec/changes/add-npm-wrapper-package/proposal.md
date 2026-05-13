@@ -8,7 +8,7 @@ the native CLI, not a second implementation.
 ## What Changes
 
 - Add a pnpm workspace at the repository root.
-- Add an npm package structure under `npm/creditlint`.
+- Add an npm package structure under `packages/creditlint`.
 - Provide a `creditlint` npm bin wrapper that delegates to a native
   `creditlint` binary.
 - Add wrapper tests that run through pnpm.
@@ -28,7 +28,7 @@ the native CLI, not a second implementation.
 ## Impact
 
 - Adds `package.json`, `pnpm-workspace.yaml`, and `pnpm-lock.yaml`.
-- Adds `npm/creditlint` package files and tests.
+- Adds `packages/creditlint` package files and tests.
 - Updates README and contributor guidance.
 - Does not add Node.js as a runtime requirement for the native `creditlint`
   binary.
