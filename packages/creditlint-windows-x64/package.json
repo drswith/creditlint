@@ -1,0 +1,21 @@
+{
+  "name": "creditlint-windows-x64",
+  "version": "0.1.0",
+  "description": "Native creditlint binary for Windows x64",
+  "license": "MIT",
+  "homepage": "https://github.com/Drswith/creditlint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Drswith/creditlint.git",
+    "directory": "packages/creditlint-windows-x64"
+  },
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "files": [
+    "bin/"
+  ]
+}

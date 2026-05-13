@@ -78,6 +78,11 @@ cargo build
 CREDITLINT_BIN="$PWD/target/debug/creditlint" pnpm --filter creditlint run creditlint --help
 ```
 
+The npm wrapper should remain usable by frontend and JavaScript-focused users
+without a Rust toolchain. Publishable npm releases must provide native binaries
+through platform optional packages under `packages/creditlint-*`; `CREDITLINT_BIN`
+and Cargo build output fallback paths are for tests and repository development.
+
 ## Commit Metadata
 
 This project is specifically about credit and authorship metadata. Contributors

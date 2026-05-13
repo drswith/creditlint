@@ -1,0 +1,57 @@
+## ADDED Requirements
+
+### Requirement: Platform Package Layout
+
+The npm workspace SHALL include platform-specific packages for native binaries.
+
+#### Scenario: Platform package declares native metadata
+
+- **WHEN** a developer reads a platform package `package.json`
+- **THEN** it SHALL declare `os`, `cpu`, package metadata, and files for a
+  packaged native binary
+
+#### Scenario: Main package uses optional dependencies
+
+- **WHEN** a developer reads `packages/creditlint/package.json`
+- **THEN** it SHALL list supported platform packages in `optionalDependencies`
+
+### Requirement: Native Package Resolution
+
+The npm wrapper SHALL resolve the current platform package before local Cargo
+build outputs.
+
+#### Scenario: Installed platform package is used
+
+- **WHEN** `CREDITLINT_BIN` is unset and the current platform package provides a
+  binary
+- **THEN** the wrapper SHALL execute that binary with the user-provided
+  arguments
+
+#### Scenario: Override remains highest priority
+
+- **WHEN** `CREDITLINT_BIN` points to an executable
+- **THEN** the wrapper SHALL execute it before checking platform packages
+
+#### Scenario: Unsupported platform fails clearly
+
+- **WHEN** the current `process.platform` and `process.arch` combination is not
+  supported
+- **THEN** the wrapper SHALL exit with code `2` and report the unsupported
+  platform key
+
+#### Scenario: Missing installed package fails clearly
+
+- **WHEN** the current platform is supported but no platform package binary or
+  local fallback binary can be found
+- **THEN** the wrapper SHALL exit with code `2` and explain that the optional
+  platform package may be missing
+
+### Requirement: Publish Boundary Documentation
+
+Documentation SHALL state that npm consumers should not need Rust.
+
+#### Scenario: First manual publish path is documented
+
+- **WHEN** a maintainer reads the npm wrapper README
+- **THEN** it SHALL explain that platform package binaries must be staged before
+  publishing and list the manual publish order

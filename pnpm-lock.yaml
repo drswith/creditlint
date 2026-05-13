@@ -8,4 +8,30 @@ importers:
 
   .: {}
 
-  packages/creditlint: {}
+  packages/creditlint:
+    optionalDependencies:
+      creditlint-darwin-arm64:
+        specifier: workspace:0.1.0
+        version: link:../creditlint-darwin-arm64
+      creditlint-darwin-x64:
+        specifier: workspace:0.1.0
+        version: link:../creditlint-darwin-x64
+      creditlint-linux-arm64:
+        specifier: workspace:0.1.0
+        version: link:../creditlint-linux-arm64
+      creditlint-linux-x64:
+        specifier: workspace:0.1.0
+        version: link:../creditlint-linux-x64
+      creditlint-windows-x64:
+        specifier: workspace:0.1.0
+        version: link:../creditlint-windows-x64
+
+  packages/creditlint-darwin-arm64: {}
+
+  packages/creditlint-darwin-x64: {}
+
+  packages/creditlint-linux-arm64: {}
+
+  packages/creditlint-linux-x64: {}
+
+  packages/creditlint-windows-x64: {}

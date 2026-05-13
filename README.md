@@ -172,8 +172,19 @@ validates the optional npm wrapper package and OpenSpec artifacts.
 ## npm Wrapper
 
 The npm package is optional. It exists for teams that already install developer
-tools through npm, pnpm, or npx, and it delegates to the native Rust
-`creditlint` binary instead of implementing policy logic in JavaScript.
+tools through npm, pnpm, or npx. Normal npm consumers should not need Rust or
+Cargo; the `creditlint` package resolves a platform-specific optional package
+that contains the native Rust binary.
+
+The JavaScript code remains a thin wrapper. It does not reimplement policy logic
+or Git metadata checks.
+
+Install from npm once packages are published:
+
+```sh
+pnpm add -D creditlint
+pnpm exec creditlint --help
+```
 
 Local development uses the pnpm workspace:
 
@@ -184,9 +195,15 @@ CREDITLINT_BIN="$PWD/target/debug/creditlint" pnpm --filter creditlint run credi
 pnpm --filter creditlint test
 ```
 
-If `CREDITLINT_BIN` is not set, the wrapper checks for a packaged native binary
-under `packages/creditlint/native/`, then falls back to repository-local Cargo build
-outputs under `target/release/` and `target/debug/`.
+Resolution order:
+
+1. `CREDITLINT_BIN`
+2. installed platform package binary, such as `creditlint-darwin-arm64`
+3. package-local `packages/creditlint/native/`
+4. repository-local Cargo outputs under `target/release/` and `target/debug/`
+
+Do not publish the main npm package as a user-facing release until the matching
+platform packages have staged native binaries.
 
 ## Local Hooks
 

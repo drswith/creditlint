@@ -22,6 +22,13 @@
   "bin": {
     "creditlint": "./bin/creditlint.js"
   },
+  "optionalDependencies": {
+    "creditlint-darwin-arm64": "workspace:0.1.0",
+    "creditlint-darwin-x64": "workspace:0.1.0",
+    "creditlint-linux-arm64": "workspace:0.1.0",
+    "creditlint-linux-x64": "workspace:0.1.0",
+    "creditlint-windows-x64": "workspace:0.1.0"
+  },
   "files": [
     "bin/",
     "native/",

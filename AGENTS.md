@@ -68,6 +68,8 @@ Expected Rust tooling:
   Git metadata collection.
 - Keep GitHub squash merge limitations explicit in docs and code comments.
 - Use deterministic tests for policy behavior before adding workflow glue.
+- Keep npm releases usable without requiring Rust or Cargo by resolving native
+  binaries from platform optional packages before local development fallbacks.
 
 ## Files
 

@@ -8,6 +8,11 @@ const path = require("node:path");
 const test = require("node:test");
 
 const wrapper = path.resolve(__dirname, "..", "bin", "creditlint.js");
+const {
+  candidateBinaries,
+  platformPackageName,
+  resolveBinary,
+} = require("../bin/creditlint.js");
 
 function makeFakeBinary() {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "creditlint-wrapper-"));
@@ -69,4 +74,74 @@ test("missing native binary exits with code 2", () => {
   assert.equal(result.status, 2);
   assert.match(result.stderr, /could not find a native creditlint binary/);
   assert.match(result.stderr, /CREDITLINT_BIN/);
+});
+
+test("CREDITLINT_BIN override is the only candidate when set", () => {
+  const overridePath = path.join(os.tmpdir(), "creditlint-override");
+  const candidates = candidateBinaries({
+    env: { CREDITLINT_BIN: overridePath },
+    platform: "darwin",
+    arch: "arm64",
+  });
+
+  assert.deepEqual(candidates, [
+    {
+      kind: "env",
+      path: overridePath,
+    },
+  ]);
+});
+
+test("current supported platform maps to native package name", () => {
+  assert.equal(platformPackageName("darwin", "arm64"), "creditlint-darwin-arm64");
+  assert.equal(platformPackageName("darwin", "x64"), "creditlint-darwin-x64");
+  assert.equal(platformPackageName("linux", "arm64"), "creditlint-linux-arm64");
+  assert.equal(platformPackageName("linux", "x64"), "creditlint-linux-x64");
+  assert.equal(platformPackageName("win32", "x64"), "creditlint-windows-x64");
+});
+
+test("installed platform package candidate is checked before local fallbacks", () => {
+  const candidates = candidateBinaries({
+    env: {},
+    platform: process.platform,
+    arch: process.arch,
+    repoRoot: "/repo",
+  });
+
+  assert.equal(candidates[0].kind, "platform-package");
+  assert.match(candidates[0].packageName, /^creditlint-/);
+  assert.equal(candidates.at(-2).kind, "cargo-release");
+  assert.equal(candidates.at(-1).kind, "cargo-debug");
+});
+
+test("unsupported platform reports platform key", () => {
+  const resolved = resolveBinary({
+    env: {},
+    platform: "freebsd",
+    arch: "riscv64",
+    repoRoot: "/definitely-missing-creditlint-repo",
+  });
+
+  assert.equal(resolved.binary, undefined);
+  assert.equal(resolved.platformKey, "freebsd-riscv64");
+  assert.match(resolved.error, /unsupported platform: freebsd-riscv64/);
+});
+
+test("supported platform without native binary reports missing optional package", () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "creditlint-empty-repo-"));
+
+  try {
+    const resolved = resolveBinary({
+      env: {},
+      platform: "linux",
+      arch: "x64",
+      repoRoot: tempDir,
+    });
+
+    assert.equal(resolved.binary, undefined);
+    assert.equal(resolved.packageName, "creditlint-linux-x64");
+    assert.match(resolved.error, /optional package creditlint-linux-x64 may not be installed/);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });
