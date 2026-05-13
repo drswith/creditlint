@@ -20,7 +20,7 @@
     "metadata"
   ],
   "bin": {
-    "creditlint": "./bin/creditlint.js"
+    "creditlint": "bin/creditlint.js"
   },
   "optionalDependencies": {
     "creditlint-darwin-arm64": "workspace:0.1.0",

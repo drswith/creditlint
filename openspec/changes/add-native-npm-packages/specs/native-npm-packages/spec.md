@@ -108,3 +108,26 @@ records before trusted publishing is configured.
 - **WHEN** a user accidentally invokes the bootstrap main package binary
 - **THEN** it SHALL exit with code `2` and explain that the version is only a
   trusted publishing placeholder
+
+### Requirement: CI Trusted Publishing
+
+The release workflow SHALL publish npm packages through GitHub Actions trusted
+publishing.
+
+#### Scenario: Release workflow has OIDC permission
+
+- **WHEN** the npm publish job runs on a version tag
+- **THEN** it SHALL have `id-token: write` permission for npm trusted
+  publishing
+
+#### Scenario: CI publishes all npm packages after native artifacts build
+
+- **WHEN** the release workflow builds native artifacts
+- **THEN** the npm publish job SHALL stage those artifacts into platform package
+  directories and publish platform packages before the main `creditlint` package
+
+#### Scenario: Linux arm64 npm package has a CI artifact
+
+- **WHEN** the npm publish job stages package binaries
+- **THEN** the release workflow SHALL provide a Linux arm64 native artifact for
+  `creditlint-linux-arm64`

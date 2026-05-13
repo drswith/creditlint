@@ -9,6 +9,7 @@ Usage:
   scripts/publish-npm-packages.sh --dry-run --stage-local
 
 Publishes npm platform packages first, then the main creditlint wrapper package.
+Uses npm publish so GitHub Actions trusted publishing can use OIDC.
 
 Options:
   --dry-run         Validate and run pnpm publish --dry-run for every package.
@@ -204,5 +205,5 @@ fi
 
 for package in "${packages[@]}"; do
   echo "publishing $package (${mode})"
-  pnpm --filter "$package" publish --no-git-checks "${publish_args[@]}"
+  (cd "packages/$package" && npm publish "${publish_args[@]}")
 done
