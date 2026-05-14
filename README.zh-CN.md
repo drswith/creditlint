@@ -2,6 +2,12 @@
 
 # creditlint
 
+[![CI](https://github.com/Drswith/creditlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Drswith/creditlint/actions/workflows/ci.yml)
+[![许可证：MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-native-orange.svg)](https://www.rust-lang.org/)
+[![OpenSpec](https://img.shields.io/badge/OpenSpec-spec--driven-2f6fdd.svg)](openspec/config.yaml)
+[![CLI](https://img.shields.io/badge/CLI-creditlint-0f766e.svg)](README.zh-CN.md)
+
 `creditlint` 是一个 Rust 原生命令行工具，用于在不需要的贡献归属标记进入项目历史之前强制执行 Git 署名和贡献元数据策略。
 
 它面向使用 AI 辅助开发的团队，但不希望工具、代理或托管工作流悄悄把 `Co-authored-by`、`Made with` 或生成工具尾注这类类似署名的元数据写入提交、拉取请求和合并消息。
@@ -389,3 +395,7 @@ just npm-publish-dry-run
 ## 许可证
 
 MIT
+
+## Star 趋势
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Drswith/creditlint&type=Date)](https://www.star-history.com/#Drswith/creditlint&Date)
