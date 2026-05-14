@@ -2,6 +2,15 @@
 
 # creditlint
 
+[![CI](https://github.com/Drswith/creditlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Drswith/creditlint/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/github/downloads/Drswith/creditlint/total.svg)](https://github.com/Drswith/creditlint/releases)
+[![Crates.io](https://img.shields.io/crates/d/creditlint.svg?label=crates.io)](https://crates.io/crates/creditlint)
+[![npm](https://img.shields.io/npm/dt/creditlint.svg?label=npm)](https://www.npmjs.com/package/creditlint)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Rust](https://img.shields.io/badge/Rust-native-orange.svg)](https://www.rust-lang.org/)
+[![OpenSpec](https://img.shields.io/badge/OpenSpec-spec--driven-2f6fdd.svg)](openspec/config.yaml)
+[![CLI](https://img.shields.io/badge/CLI-creditlint-0f766e.svg)](README.md)
+
 `creditlint` is a Rust-native CLI for enforcing Git credit and authorship
 metadata policy before unwanted credit markers land in project history.
 
@@ -428,3 +437,7 @@ Before that release:
 ## License
 
 MIT
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=Drswith/creditlint&type=Date)](https://www.star-history.com/#Drswith/creditlint&Date)
