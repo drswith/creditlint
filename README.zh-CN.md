@@ -2,14 +2,9 @@
 
 # creditlint
 
-[![CI](https://github.com/Drswith/creditlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Drswith/creditlint/actions/workflows/ci.yml)
-[![下载量](https://img.shields.io/github/downloads/Drswith/creditlint/total.svg)](https://github.com/Drswith/creditlint/releases)
-[![crates.io](https://img.shields.io/crates/d/creditlint.svg?label=crates.io)](https://crates.io/crates/creditlint)
-[![npm](https://img.shields.io/npm/dt/creditlint.svg?label=npm)](https://www.npmjs.com/package/creditlint)
-[![许可证：MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Rust](https://img.shields.io/badge/Rust-native-orange.svg)](https://www.rust-lang.org/)
-[![OpenSpec](https://img.shields.io/badge/OpenSpec-spec--driven-2f6fdd.svg)](openspec/config.yaml)
-[![CLI](https://img.shields.io/badge/CLI-creditlint-0f766e.svg)](README.zh-CN.md)
+[![CI](https://github.com/Drswith/creditlint/actions/workflows/ci.yml/badge.svg)](https://github.com/Drswith/creditlint/actions/workflows/ci.yml) [![许可证：MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE) [![Rust](https://img.shields.io/badge/Rust-native-orange.svg)](https://www.rust-lang.org/) [![OpenSpec](https://img.shields.io/badge/OpenSpec-spec--driven-2f6fdd.svg)](openspec/config.yaml) [![CLI](https://img.shields.io/badge/CLI-creditlint-0f766e.svg)](README.zh-CN.md)
+
+[![下载量](https://img.shields.io/github/downloads/Drswith/creditlint/total.svg)](https://github.com/Drswith/creditlint/releases) [![crates.io](https://img.shields.io/crates/d/creditlint.svg?label=crates.io)](https://crates.io/crates/creditlint) [![npm](https://img.shields.io/npm/dt/creditlint.svg?label=npm)](https://www.npmjs.com/package/creditlint)
 
 `creditlint` 是一个 Rust 原生命令行工具，用于在不需要的贡献归属标记进入项目历史之前强制执行 Git 署名和贡献元数据策略。
 
