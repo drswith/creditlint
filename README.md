@@ -2,15 +2,32 @@
 
 # creditlint
 
-`creditlint` is a Rust native CLI for enforcing Git credit and authorship
-metadata policy.
+`creditlint` is a Rust-native CLI for enforcing Git credit and authorship
+metadata policy before unwanted credit markers land in project history.
 
-It helps teams that allow AI-assisted development block unauthorized authorship
-or credit markers such as `Co-authored-by`, `Made with`, or generated-tool
-trailers from commits, pull requests, and merge messages.
+It is built for teams that use AI-assisted development but do not want tools,
+agents, or hosted workflows to silently add authorship-like metadata such as
+`Co-authored-by`, `Made with`, or generated-tool trailers to commits, pull
+requests, and merge messages.
 
 `creditlint` does not try to detect whether code was AI-generated, and it is not
 a legal compliance engine.
+
+## What It Checks
+
+`creditlint` applies a repository policy to the Git metadata surfaces where
+credit can appear:
+
+- commit message text
+- pull request title/body text when passed through `--message-file`
+- Git author name/email
+- Git committer name/email
+- final merge or squash messages when a merge bot passes them to the CLI
+
+It is designed to separate two concepts that often get blurred:
+
+- Authorship and credit markers are policy-controlled.
+- Provenance markers can be allowed without becoming authorship.
 
 ## Why
 
@@ -22,19 +39,19 @@ Co-authored-by: Codex <...>
 Author: Cursor Agent <cursoragent@cursor.com>
 Made with Cursor
 Generated with Claude
-Author: Cursor Agent <cursoragent@cursor.com>
 ```
 
-That metadata can be useful for provenance, but it should not silently become
-authorship or contribution credit. `creditlint` keeps those concepts separate:
+That metadata can be useful for audit and provenance. The problem is when it is
+stored in fields that imply authorship or contribution credit without an
+explicit project policy.
 
-- Authorship and credit markers are policy-controlled.
-- Provenance markers can be allowed without implying authorship.
-- Enforcement happens through local hooks, CI, repository rules, or a merge bot.
+`creditlint` is intentionally narrow: it validates metadata placement and
+policy, not the origin of the code.
 
 ## Current Status
 
-The MVP CLI is implemented and the repository is in delivery preparation.
+The MVP CLI is implemented. The repository is in delivery preparation for
+public package and release channels.
 
 Implemented surfaces:
 
@@ -49,7 +66,7 @@ Implemented surfaces:
 - Rust native release artifacts
 - Optional npm wrapper with platform package resolution
 
-Primary delivery targets:
+Planned public distribution channels:
 
 - crates.io package metadata for the Rust CLI
 - GitHub Release assets for prebuilt native binaries
@@ -57,7 +74,7 @@ Primary delivery targets:
 
 ## Install
 
-From this repository:
+Until public packages are published, install from this repository:
 
 ```sh
 cargo install --path .
@@ -75,7 +92,7 @@ After public package releases are available, consumers should prefer one of:
 
 - the `creditlint` crate from crates.io
 - a prebuilt native binary from GitHub Releases
-- the optional npm wrapper for teams that already install developer tools
+- the optional npm package for teams that already install developer tools
   through npm, pnpm, or npx
 
 The native CLI does not require Node.js, pnpm, or npm in consuming
@@ -83,7 +100,7 @@ repositories.
 
 ## Quick Start
 
-Create a policy file in a Git repository:
+Create the default policy file in a Git repository:
 
 ```sh
 creditlint init
@@ -135,9 +152,9 @@ Exit codes:
 
 ## Policy
 
-Without `.creditlint.yml`, `creditlint` uses a built-in default policy that
-blocks common AI/tool authorship and credit markers while allowing explicit
-provenance trailers.
+Without `.creditlint.yml`, `creditlint` uses a built-in default policy. That
+default blocks common AI/tool authorship and credit markers while allowing
+explicit provenance trailers.
 
 Example policy file:
 
@@ -174,8 +191,8 @@ with exit code `2`.
 
 ## Enforcement Model
 
-`creditlint` is designed to run at multiple layers because no single hook or CI
-job sees every Git metadata surface.
+`creditlint` should run at multiple layers because no single hook or CI job sees
+every Git metadata surface.
 
 Recommended layers:
 
@@ -187,11 +204,11 @@ Recommended layers:
   messages when squash merge remains enabled.
 - Merge-bot validation when the repository controls the final merge message.
 
-The boundary is important: `creditlint check --range` validates proposed
-commits, but it does not by itself validate a final squash merge message edited
-or synthesized by the hosting platform UI.
+The boundary is important: `creditlint check --range` validates proposed commits.
+It does not by itself validate a final squash merge message edited or synthesized
+by the hosting platform UI.
 
-For strong rollout guidance in another repository, use the repository-local
+For stronger rollout guidance in another repository, use the repository-local
 skill:
 
 ```text
