@@ -7,6 +7,17 @@ semantic versioning after the first release.
 
 ## Unreleased
 
+No unreleased changes.
+
+## 0.1.2 - 2026-05-14
+
+### Changed
+
+- Refined README positioning, badges, and Star History presentation.
+- Added GitHub Releases, crates.io, and npm download badges.
+
+## 0.1.1 - 2026-05-13
+
 ### Added
 
 - Initialized OpenSpec planning for the `creditlint` MVP.

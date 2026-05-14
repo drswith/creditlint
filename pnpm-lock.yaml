@@ -11,19 +11,19 @@ importers:
   packages/creditlint:
     optionalDependencies:
       creditlint-darwin-arm64:
-        specifier: workspace:0.1.1
+        specifier: workspace:0.1.2
         version: link:../creditlint-darwin-arm64
       creditlint-darwin-x64:
-        specifier: workspace:0.1.1
+        specifier: workspace:0.1.2
         version: link:../creditlint-darwin-x64
       creditlint-linux-arm64:
-        specifier: workspace:0.1.1
+        specifier: workspace:0.1.2
         version: link:../creditlint-linux-arm64
       creditlint-linux-x64:
-        specifier: workspace:0.1.1
+        specifier: workspace:0.1.2
         version: link:../creditlint-linux-x64
       creditlint-windows-x64:
-        specifier: workspace:0.1.1
+        specifier: workspace:0.1.2
         version: link:../creditlint-windows-x64
 
   packages/creditlint-darwin-arm64: {}
