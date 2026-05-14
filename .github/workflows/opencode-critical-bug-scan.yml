@@ -1,0 +1,75 @@
+name: Critical Bug Scan
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: opencode-critical-bug-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: anomalyco/opencode/github@77fc88c8ade8e5a620ebbe1197f3a572d29ae91a
+        env:
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCODE_CONFIG_CONTENT: >-
+            {"provider":{"openai":{"options":{"baseURL":"{env:OPENAI_BASE_URL}","apiKey":"{env:OPENAI_API_KEY}"}}}}
+        with:
+          model: openai/gpt-5.5
+          prompt: |
+            You are a deep bug-finding automation focused on high-severity issues.
+
+            Goal:
+            Inspect the default branch's recent commits and identify critical
+            correctness bugs that escaped review. Focus on roughly the last 20
+            commits or the last 14 days, whichever is smaller.
+
+            Only surface issues that would cause:
+            - data loss
+            - crashes in important paths
+            - security holes
+            - significant user-facing breakage
+
+            Investigation strategy:
+            - Focus on behavioral changes with meaningful blast radius.
+            - Look for data corruption, race conditions that lose writes, null
+              dereferences in critical paths, auth or permission bypasses,
+              infinite loops, resource leaks, and silent truncation.
+            - Trace the full code path instead of pattern-matching on diffs.
+            - Ignore style issues, minor edge cases, theoretical concerns without
+              a concrete trigger, and low-severity UX degradations.
+
+            Confidence bar:
+            - You must be able to describe a concrete scenario that triggers the bug.
+            - If you cannot construct a plausible trigger scenario, do not open a PR.
+            - "No critical bugs found" is the expected outcome most runs.
+
+            Fix strategy:
+            - If you find a real critical bug, implement a minimal, high-confidence fix.
+            - Add or update tests when practical.
+            - Avoid broad refactors.
+
+            Safety rules:
+            - Do not open a PR unless you are highly confident the bug is real
+              and the fix is correct.
+            - If no critical bug is found, print a short "no critical bugs found"
+              summary in the run output and stop.
+
+            If fixed, include:
+            - Bug and impact
+            - Root cause
+            - Fix and validation performed
