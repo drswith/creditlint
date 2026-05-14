@@ -1,86 +1,145 @@
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 # creditlint
 
-`creditlint` is a policy-focused CLI for detecting unauthorized authorship and
-credit metadata in Git workflows.
+`creditlint` is a Rust native CLI for enforcing Git credit and authorship
+metadata policy.
 
-It is designed for projects that allow AI-assisted development but do not want
-coding agents, bots, or tools to be silently added as authors through commit
-trailers or merge messages.
+It helps teams that allow AI-assisted development block unauthorized authorship
+or credit markers such as `Co-authored-by`, `Made with`, or generated-tool
+trailers from commits, pull requests, and merge messages.
 
-## Status
+`creditlint` does not try to detect whether code was AI-generated, and it is not
+a legal compliance engine.
 
-This repository has moved from bootstrap implementation into delivery
-preparation.
+## Why
 
-Active change:
-
-- `bootstrap-creditlint-mvp`
-- `add-npm-wrapper-package`
-
-Current implementation target:
-
-- Implementation stack: Rust native CLI
-- Build/package manager: Cargo
-- Optional npm workspace/package manager: pnpm
-- Rust toolchain: stable with rustfmt and clippy
-- Task runner: just
-- Test runner: cargo-nextest
-- OpenSpec command runner: pnpm
-- Primary interface: `creditlint`
-- Delivery path: GitHub Actions release artifacts and GitHub Releases
-
-## Problem
-
-Coding agents can add markers such as:
+Coding agents, bots, IDEs, and hosted workflows can write metadata that changes
+how authorship or contribution credit appears in Git history:
 
 ```text
 Co-authored-by: Codex <...>
 Author: Cursor Agent <cursoragent@cursor.com>
 Made with Cursor
 Generated with Claude
+Author: Cursor Agent <cursoragent@cursor.com>
 ```
 
-These markers can create authorship, contribution-credit, and audit risks when
-they are added without explicit maintainer approval.
+That metadata can be useful for provenance, but it should not silently become
+authorship or contribution credit. `creditlint` keeps those concepts separate:
 
-`creditlint` treats authorship and provenance as separate concepts:
+- Authorship and credit markers are policy-controlled.
+- Provenance markers can be allowed without implying authorship.
+- Enforcement happens through local hooks, CI, repository rules, or a merge bot.
 
-- Authorship markers such as `Co-authored-by` affect contribution credit.
-- Provenance markers such as `AI-Assisted` or `Tool-Used` can disclose process
-  without implying authorship.
+## Current Status
 
-## Rollout Skill
+The MVP CLI is implemented and the repository is in delivery preparation.
 
-If you want an agent to help roll out `creditlint` for strong interception in
-another repository, use the repository-local skill:
+Implemented surfaces:
 
-- `skills/enforcement-rollout/SKILL.md`
+- `creditlint check --message-file`
+- `creditlint check --stdin`
+- `creditlint check --range`
+- `creditlint audit --all`
+- `creditlint init`
+- `creditlint install-hook`
+- `creditlint github ruleset-pattern`
+- Human and JSON output
+- Rust native release artifacts
+- Optional npm wrapper with platform package resolution
 
-Copyable prompt:
+Primary delivery targets:
 
-```text
-Use the creditlint repository skill `enforcement-rollout` and help me deploy creditlint in this repository for the strongest practical interception. Check what is already covered, identify the remaining gaps across local hooks, CI commit checks, PR title/body checks, final squash/merge message enforcement, and repository settings, then give me an exact rollout plan.
+- crates.io package metadata for the Rust CLI
+- GitHub Release assets for prebuilt native binaries
+- optional npm packages that resolve native binaries before local fallbacks
+
+## Install
+
+From this repository:
+
+```sh
+cargo install --path .
+creditlint --help
 ```
 
-## CLI
+For local development:
+
+```sh
+cargo build
+./target/debug/creditlint --help
+```
+
+After public package releases are available, consumers should prefer one of:
+
+- the `creditlint` crate from crates.io
+- a prebuilt native binary from GitHub Releases
+- the optional npm wrapper for teams that already install developer tools
+  through npm, pnpm, or npx
+
+The native CLI does not require Node.js, pnpm, or npm in consuming
+repositories.
+
+## Quick Start
+
+Create a policy file in a Git repository:
+
+```sh
+creditlint init
+```
+
+Install the managed `commit-msg` hook:
+
+```sh
+creditlint install-hook
+```
+
+Check one message:
 
 ```sh
 creditlint check --message-file .git/COMMIT_EDITMSG
-creditlint check --stdin
+printf 'Made with Cursor\n' | creditlint check --stdin
+```
+
+Check pull-request commits in CI:
+
+```sh
 creditlint check --range origin/main..HEAD
+```
+
+Audit all reachable Git history:
+
+```sh
 creditlint audit --all
-creditlint init
-creditlint install-hook
+```
+
+Generate a conservative GitHub ruleset regex for final squash commit messages:
+
+```sh
 creditlint github ruleset-pattern
+```
+
+Use JSON output for automation:
+
+```sh
+creditlint check --range origin/main..HEAD --format json
 ```
 
 Exit codes:
 
 - `0`: no violations
 - `1`: policy violations found
-- `2`: invalid invocation, invalid config, or missing required metadata
+- `2`: invalid invocation, invalid config, unreadable input, or failed metadata
+  collection
 
-## Policy File
+## Policy
+
+Without `.creditlint.yml`, `creditlint` uses a built-in default policy that
+blocks common AI/tool authorship and credit markers while allowing explicit
+provenance trailers.
+
+Example policy file:
 
 ```yaml
 version: 1
@@ -103,34 +162,52 @@ rules:
     - Generated-by
 ```
 
-## Governance Model
+Policy evaluation covers:
 
-`creditlint` is intended to run in multiple places:
+- commit message text
+- pull request title/body text when passed through `--message-file`
+- Git author name/email
+- Git committer name/email
+
+Forbidden rules win before allowed provenance keys. Invalid config fails closed
+with exit code `2`.
+
+## Enforcement Model
+
+`creditlint` is designed to run at multiple layers because no single hook or CI
+job sees every Git metadata surface.
+
+Recommended layers:
 
 - Local `commit-msg` hook for fast feedback.
 - CI required check for pull-request commits.
-- GitHub ruleset metadata restrictions for final protected-branch commit
-  messages, especially when squash merge remains enabled.
-- Merge-bot validation for controlled final merge messages.
-- Pull request title/body checks by writing the PR text to a file and running
-  `creditlint check --message-file`.
+- Pull request title/body check by writing PR text to a temporary file and
+  running `creditlint check --message-file`.
+- GitHub ruleset metadata restriction for final protected-branch commit
+  messages when squash merge remains enabled.
+- Merge-bot validation when the repository controls the final merge message.
 
-CI range checks are useful, but they do not by themselves guarantee validation
-of a final squash merge message edited by the hosting platform UI.
+The boundary is important: `creditlint check --range` validates proposed
+commits, but it does not by itself validate a final squash merge message edited
+or synthesized by the hosting platform UI.
 
-`check --range` and `audit --all` validate both Git identity metadata
-(`author`/`committer` name and email) and commit messages. This covers commits
-whose rendered log output shows identities such as
-`Author: Cursor Agent <cursoragent@cursor.com>` even when the commit message
-itself is clean.
+For strong rollout guidance in another repository, use the repository-local
+skill:
+
+```text
+skills/enforcement-rollout/SKILL.md
+```
+
+Copyable agent prompt:
+
+```text
+Use the creditlint repository skill `enforcement-rollout` and help me deploy creditlint in this repository for the strongest practical interception. Check what is already covered, identify the remaining gaps across local hooks, CI commit checks, PR title/body checks, final squash/merge message enforcement, and repository settings, then give me an exact rollout plan.
+```
 
 ## GitHub Actions
 
-For repository-local CI, the checked-in workflow builds and validates the Rust
-source tree directly.
-
-`fetch-depth: 0` is required for `check --range` because shallow history can
-remove the base commits needed to resolve the range.
+Range checks need enough Git history to resolve the base revision. Use
+`fetch-depth: 0` or an equivalent fetch strategy.
 
 ```yaml
 name: creditlint
@@ -154,7 +231,7 @@ jobs:
       - name: Build creditlint
         run: cargo build --release
 
-      - name: Check pull request commit messages
+      - name: Check pull request commits
         if: github.event_name == 'pull_request'
         run: |
           ./target/release/creditlint check \
@@ -165,264 +242,102 @@ jobs:
         run: ./target/release/creditlint audit --all
 ```
 
-The release workflow produces native binaries for Linux, macOS, and Windows as
-workflow artifacts on manual runs and as GitHub Release assets for version tags.
-It also generates a combined `SHA256SUMS` artifact and publishes it with tagged
-GitHub Releases. Release jobs run formatting, clippy, tests, and OpenSpec
-validation before building publishable artifacts.
-
-For crates.io publishing, the release workflow uses:
-
-- job-scoped `permissions: contents: write` for GitHub Release asset publishing
-- repository secret `CARGO_REGISTRY_TOKEN` for `cargo publish`
-
-Tag pushes matching `v*` publish native assets and then publish the crate to
-crates.io. Manual `workflow_dispatch` runs build artifacts by default and can
-opt into crates.io publishing with the `publish_crate` input.
-
-The CI workflow also runs workflow linting for `.github/workflows/*.yml` and
-validates the optional npm wrapper package and OpenSpec artifacts.
-
-## npm Wrapper
-
-The npm package is optional. It exists for teams that already install developer
-tools through npm, pnpm, or npx. Normal npm consumers should not need Rust or
-Cargo; the `creditlint` package resolves a platform-specific optional package
-that contains the native Rust binary.
-
-The JavaScript code remains a thin wrapper. It does not reimplement policy logic
-or Git metadata checks.
-
-Install from npm once packages are published:
-
-```sh
-pnpm add -D creditlint
-pnpm exec creditlint --help
-```
-
-Local development uses the pnpm workspace:
-
-```sh
-pnpm install
-cargo build
-CREDITLINT_BIN="$PWD/target/debug/creditlint" pnpm --filter creditlint run creditlint --help
-pnpm --filter creditlint test
-```
-
-Resolution order:
-
-1. `CREDITLINT_BIN`
-2. installed platform package binary, such as `creditlint-darwin-arm64`
-3. package-local `packages/creditlint/native/`
-4. repository-local Cargo outputs under `target/release/` and `target/debug/`
-
-Do not publish the main npm package as a user-facing release until the matching
-platform packages have staged native binaries.
-
-Maintainers can publish all npm packages in the required order from the
-repository root:
-
-```sh
-scripts/bootstrap-npm-trust-packages.sh --dry-run
-scripts/bootstrap-npm-trust-packages.sh --execute
-
-scripts/publish-npm-packages.sh --dry-run --stage-local
-scripts/publish-npm-packages.sh --dry-run
-scripts/publish-npm-packages.sh --execute
-```
-
-The bootstrap script publishes `0.0.0-trust.0` with the `bootstrap` dist-tag so
-the npm package records exist before trusted publishing is configured. It does
-not publish a usable release and does not require native binaries. Publish
-commands use each package's `publishConfig.registry`, which points at the
-official npm registry; pass `--registry URL` only when intentionally publishing
-elsewhere.
-
-The script stages binaries from `dist/npm/` automatically, or with
-`--stage-local` it builds and stages the current host binary for local dry runs.
-Staged platform binaries under `packages/creditlint-*/bin/` are ignored by Git.
-The script refuses to publish if any required platform binary is missing.
-
-## Local Hooks
-
-Initialize a repository policy file:
-
-```sh
-creditlint init
-```
-
-Install the managed `commit-msg` hook:
-
-```sh
-creditlint install-hook
-```
-
-The installed hook runs:
-
-```sh
-creditlint check --message-file "$1"
-```
-
-`creditlint install-hook` only replaces hooks that already carry the stable
-`creditlint managed hook` marker. If a repository already has an unmanaged
-`commit-msg` hook, `creditlint` refuses to overwrite it.
-
-For manual integration into an existing hook, add this line to the hook script:
-
-```sh
-creditlint check --message-file "$1"
-```
-
-If your team uses the Python `pre-commit` framework, run the same command from a
-local hook entry and pass the commit message file path through the hook config.
-
-## Pull Request Title And Body Checks
-
-Pull request text is a separate input surface from commit messages. This matters
-most when a hosting platform uses the pull request title or body while building
-a final squash merge commit message.
-
-In CI, write the pull request title and body into a temporary file and lint that
-file with the same policy engine:
+To validate pull request title/body text, write it to a file and run the same
+policy engine:
 
 ```sh
 printf '%s\n\n%s\n' "$PR_TITLE" "$PR_BODY" > /tmp/creditlint-pr-message.txt
 creditlint check --message-file /tmp/creditlint-pr-message.txt
 ```
 
-For GitHub Actions, the title and body can be read from the pull request event
-payload and passed through the same file-based check. `check --range` and
-`check --message-file` are complementary; range checks validate commits, while
-the temporary file path validates PR text that may later influence squash merge
-message generation.
+## GitHub Rulesets And Merge Bots
 
-## GitHub Squash Merge Rulesets
+Use `creditlint github ruleset-pattern` when the active policy can be safely
+represented as one GitHub commit-message restriction regex.
 
-If GitHub squash merge remains enabled, use repository ruleset metadata
-restrictions to validate the final squash commit message that GitHub is about to
-write.
+Representable as one ruleset regex:
 
-Export a conservative ruleset regex from the active policy:
+- forbidden trailer rules with an exact trailer key
+- trailer value matchers that are exact strings, unanchored regexes, or `Any`
+- free-form marker rules expressed as one anchored line regex
+- policies where allowed provenance keys do not overlap forbidden trailer keys
 
-```sh
-creditlint github ruleset-pattern
-```
+Not representable as one ruleset regex:
 
-In GitHub branch or repository rulesets, use the exported pattern with a
-commit-message restriction equivalent to:
+- Git author or committer identity rules
+- policies that need forbidden/allowed precedence on the same trailer key
+- forbidden rules that depend on regex-matched trailer field names
+- policy logic that needs normalization or more than one regex pass
 
-- commit message must not match regex
-
-This ruleset path is stronger than CI for the final squash commit because
-GitHub evaluates the generated merge message at the protected-branch boundary.
-
-`creditlint check --range` is still useful for pull request commit messages, but
-it does not by itself validate a final squash message edited in the GitHub UI.
-
-## Merge Bot Validation
-
-For repositories that use a controlled merge bot, validate the final merge
-message immediately before the bot performs the protected-branch write:
+When export is unsafe, the command fails closed. Use CI range checks for commit
+metadata and a controlled merge-bot validation step for the exact final merge
+message:
 
 ```sh
 creditlint check --message-file final-merge-message.txt
 ```
 
-This path is appropriate when:
+## npm Wrapper
 
-- the active policy cannot be represented safely as one GitHub ruleset regex
-- the repository wants one final validation step after PR checks
-- the merge system already materializes the exact final commit message
+The npm package is optional. It is for teams that already install developer
+tools through npm, pnpm, or npx.
 
-The merge bot should fail closed when `creditlint` exits with `1` or `2`.
+Normal npm consumers should not need Rust or Cargo. The `creditlint` npm package
+delegates to a native binary from a platform-specific optional package such as
+`creditlint-darwin-arm64` or `creditlint-linux-x64`.
 
-## Ruleset Export Boundary
+Install after npm packages are published:
 
-`creditlint github ruleset-pattern` intentionally supports only a conservative
-subset of policy behavior.
+```sh
+pnpm add -D creditlint
+pnpm exec creditlint --help
+```
 
-Currently representable as one GitHub ruleset regex:
+Resolution order:
 
-- forbidden trailer rules with an exact trailer key
-- trailer value matchers that are exact strings, unanchored regexes, or `Any`
-- free-form marker rules expressed as one anchored line regex such as
-  `(?i)^made[- ]with\\b.*$`
-- policies where allowed provenance keys do not overlap any forbidden trailer
-  key
+1. `CREDITLINT_BIN`
+2. installed platform package binary
+3. package-local `packages/creditlint/native/`
+4. repository-local Cargo outputs under `target/release/` and `target/debug/`
 
-Not representable safely as one GitHub ruleset regex:
-
-- Git author or committer identity rules; enforce those with `creditlint
-  check --range`, `creditlint audit --all`, or platform identity restrictions
-- policies that need forbidden/allowed precedence on the same trailer key
-- forbidden trailer rules that depend on regex-matched trailer field names
-- free-form rules that are not a single anchored line regex
-- policies that would require normalization or logic beyond one regex pass
-
-When the active message-policy subset falls outside the safe subset,
-`creditlint github ruleset-pattern` fails closed and points the repository to
-merge-bot validation for final squash messages.
+The JavaScript wrapper does not reimplement policy logic or Git metadata
+collection.
 
 ## Privacy
 
-The planned CLI is local-first. By default, `creditlint` should not upload commit
-messages, pull request text, or policy files to any hosted service.
+`creditlint` is local-first.
 
-Current default boundary:
+Default behavior:
 
-- `creditlint` reads local message text, Git metadata, and repository config.
-- `creditlint` does not send commit messages or pull request text to a remote
-  API.
-- `creditlint` does not require a hosted account or background service.
-- Network access is not part of the default policy-evaluation path.
+- reads local message text, Git metadata, and `.creditlint.yml`
+- does not upload commit messages or pull request text
+- does not require a hosted account or background service
+- does not use network access during policy evaluation
 
-If a future change introduces optional hosted integrations, that behavior should
-be documented separately instead of being folded into the default CLI contract.
+Any future hosted integration should be documented as a separate optional
+behavior.
 
 ## Threat Model
 
 The MVP is designed to catch:
 
-- Tools that automatically append authorship-like markers.
-- Contributors who accidentally paste AI/tool credit markers into commit or
-  pull request text.
-- Cloud-agent and CI paths that bypass local developer hooks.
-- Platform merge paths where the final protected-branch message can differ from
-  checked commits.
+- tools that append authorship-like markers
+- contributors who accidentally paste AI/tool credit markers
+- cloud-agent and CI paths that bypass local hooks
+- platform merge paths where the final protected-branch message differs from
+  checked commits
 
-Current out-of-scope evasions:
+Current out of scope:
 
-- Unicode homoglyph spoofing such as visually similar non-ASCII characters.
-- Deliberately split or obfuscated markers intended to bypass simple line-based
-  detection.
-- Administrator bypass of repository rules.
-- Direct protected-branch writes outside the enforced workflow.
-
-## Performance
-
-The current Git collection path is intended to stream `git log` output
-record-by-record instead of first loading the full raw log into memory.
-
-Current budget:
-
-- Memory growth should be bounded by the current record being parsed plus the
-  accumulated violation list, not the full raw `git log` output.
-- `audit --all` should remain practical on normal repository histories without
-  requiring the full commit-message stream to be buffered at once.
+- Unicode homoglyph spoofing
+- deliberately split or obfuscated markers
+- administrator bypass of repository rules
+- direct protected-branch writes outside the enforced workflow
 
 ## Development
 
-Use Cargo for implementation work. The OpenSpec CLI is currently invoked through
-`pnpm dlx`, but consuming projects should not need Node.js or pnpm to run
-`creditlint`.
-
-Planned Rust tooling:
-
-- `rust-toolchain.toml` pins stable Rust with `rustfmt` and `clippy`.
-- `just` provides short project commands.
-- `cargo-nextest` is the preferred test runner.
-- `cargo-watch` is optional for local edit/test loops.
-- `cross` is reserved for release builds.
+Use Cargo for Rust implementation work. Use pnpm only for OpenSpec commands and
+the optional npm wrapper workspace.
 
 Common commands:
 
@@ -431,59 +346,56 @@ just check
 just fmt
 just lint
 just test
+just test-npm
+just openspec-validate
 just ci
-just release-build
-just cross-build x86_64-unknown-linux-gnu
 ```
 
-Local prerequisites for the planned Rust workflow:
+Local tooling:
 
-```sh
-cargo install just
-cargo install cargo-nextest
-cargo install cross
-```
+- stable Rust from `rust-toolchain.toml`
+- `just` for project recipes
+- `cargo-nextest` for the preferred test runner
+- `cross` for release packaging tasks
+- pnpm for OpenSpec and npm wrapper validation
 
 OpenSpec commands:
 
 ```sh
 pnpm dlx @fission-ai/openspec list
 pnpm dlx @fission-ai/openspec validate --all
-pnpm dlx @fission-ai/openspec show bootstrap-creditlint-mvp
+pnpm dlx @fission-ai/openspec status --change bootstrap-creditlint-mvp --json
+pnpm dlx @fission-ai/openspec status --change add-npm-wrapper-package --json
 ```
 
-Implementation work should follow:
+Implementation work should follow the active OpenSpec change tasks before code
+or user-facing behavior changes are made.
 
-```text
-openspec/changes/bootstrap-creditlint-mvp/tasks.md
-```
+## Release And Publishing
 
-## Packaging
+Release preparation covers:
 
-`creditlint` now uses a delivery-oriented native packaging path through:
-
-- crates.io for the `creditlint` crate
+- crates.io for the Rust CLI
 - GitHub Actions workflow artifacts for manual release runs
-- GitHub Releases for tagged prebuilt binaries, `SHA256SUMS`, and release notes
+- GitHub Releases for tagged native binaries and `SHA256SUMS`
+- optional npm platform packages plus the main npm wrapper
 
-The published metadata points back to this repository and the future `docs.rs`
-documentation page for the crate.
-
-For cross-platform release artifacts, use `cross` through the checked-in
-`just` recipes:
+Useful maintainer commands:
 
 ```sh
+just release-build
 just cross-build x86_64-unknown-linux-gnu
 just cross-build x86_64-pc-windows-msvc
+just npm-trust-bootstrap-dry-run
+just npm-publish-local-dry-run
+just npm-publish-dry-run
 ```
 
-For consumers who do not want a Rust toolchain, prefer downloading the matching
-native binary artifact from GitHub Releases and verifying it against
-`SHA256SUMS`.
+Do not publish the main npm wrapper as a normal user-facing release until the
+matching platform packages have staged native binaries.
 
-For maintainers, the crates.io publish path requires creating a crates.io API
-token and storing it in the repository as the `CARGO_REGISTRY_TOKEN` Actions
-secret.
+For crates.io publishing, the GitHub release workflow expects
+`CARGO_REGISTRY_TOKEN` to be configured as a repository secret.
 
 ## Versioning
 
@@ -492,7 +404,7 @@ The project intends to follow SemVer after the first public release.
 Before that release:
 
 - keep ongoing work in `CHANGELOG.md` under `Unreleased`
-- bump `Cargo.toml` and cut a dated changelog heading in the same release change
+- bump package versions and cut a changelog heading in the same release change
 - treat CLI flags, config schema, exit codes, and JSON output as versioned user
   contracts
 
