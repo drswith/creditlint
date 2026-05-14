@@ -1,0 +1,98 @@
+name: Security Review
+
+on:
+  schedule:
+    - cron: "0 9 * * 3"
+  workflow_dispatch:
+
+concurrency:
+  group: opencode-security-review-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prepare local output directory
+        run: mkdir -p .opencode-output
+
+      - uses: anomalyco/opencode/github@77fc88c8ade8e5a620ebbe1197f3a572d29ae91a
+        env:
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENCODE_CONFIG_CONTENT: >-
+            {"provider":{"openai":{"options":{"baseURL":"{env:OPENAI_BASE_URL}","apiKey":"{env:OPENAI_API_KEY}"}}}}
+        with:
+          model: openai/gpt-5.5
+          prompt: |
+            You are a scheduled application-security reviewer for this repository.
+
+            Goal:
+            Find validated medium, high, or critical vulnerabilities with a real
+            end-to-end attack path.
+
+            Review workflow:
+            1. Explore the repository structure, key entry points, and critical trust boundaries.
+            2. Search broadly for likely attack surfaces:
+               - auth and authorization flows
+               - request handlers and RPC entry points
+               - raw SQL, shell execution, file access, and templating
+               - external callbacks, webhooks, and network fetches
+               - secrets handling and logging paths
+            3. For every candidate finding, verify exploitability with concrete code tracing.
+            4. Report only findings you can defend with evidence.
+
+            Environment constraints:
+            - This GitHub Actions workflow does not provide a private Slack tool
+              or durable automation memory file.
+            - Do not post findings as PR comments, issues, or external messages.
+            - Do not open a PR from this workflow.
+            - Keep all output local to the workspace under `.opencode-output/`.
+
+            Reporting format:
+            - If you find validated findings, write
+              `.opencode-output/security-findings.json` with a top-level
+              `findings` array.
+            - Each finding must include:
+              - `title`
+              - `severity`
+              - `status` set to `"active"`
+              - `location` with exactly one primary file path and no line numbers
+              - `attack_path`
+              - `impact`
+              - `remediation`
+            - Also write `.opencode-output/security-summary.md` with a concise
+              human-readable summary.
+            - Use Python `json.load()` / `json.dump(..., indent=4)` for any JSON
+              read/write work. Do not hand-edit JSON.
+
+            If you do not find any new validated medium+ issues:
+            - Do not post externally.
+            - Write `.opencode-output/security-summary.md` containing a short
+              "No new validated medium+ vulnerabilities found." summary.
+
+            Reporting bar:
+            Every reported issue must include:
+            - who the attacker is
+            - what input they control
+            - how they reach the vulnerable code
+            - what impact they gain
+            - one primary `location` file path only
+
+            Do not report speculative concerns, isolated unsafe-looking APIs
+            without a real attack path, or low-signal best-practice notes.
+
+      - name: Upload security review artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-security-review-${{ github.run_id }}
+          path: .opencode-output/**/*
+          if-no-files-found: ignore
